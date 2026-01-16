@@ -24,7 +24,7 @@ These are my fun side projects that I want to share to inspire and help other de
 
 | Project | Description | Technologies |
 |---------|-------------|--------------|
-| [Public Transport Voice](./public-transport-voice) | Multilingual announcement system that breaks language barriers in public transport | Azure STT and TTS, Azure Translator |
+| [Public Transport Voice](./apps/public-transport-voice) | Multilingual announcement system that breaks language barriers in public transport | Azure STT and TTS, Azure Translator |
 
 
 
