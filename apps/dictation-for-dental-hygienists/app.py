@@ -7,7 +7,7 @@ Supports English, German, and Czech languages.
 import base64
 from dash import Dash, html, dcc, callback, Output, Input, State, clientside_callback
 
-from languages import get_language_options
+from languages import get_language_options, get_example_dictation
 from azure_services import transcribe_audio_continuous, AzureServiceError
 from extraction_service import extract_periodontal_data, ExtractionError, exam_to_dict
 from dental_chart import create_dental_chart_component, create_results_summary
@@ -76,6 +76,18 @@ app.layout = html.Div(
                 ),
             ],
             className="control-panel",
+        ),
+        # Example dictation section
+        html.Div(
+            [
+                html.H3("Example dictation:"),
+                html.P(
+                    id="example-dictation",
+                    children=get_example_dictation("en-US"),
+                    className="example-text",
+                ),
+            ],
+            className="example-section",
         ),
         # Dental chart
         html.Div(
@@ -202,6 +214,15 @@ clientside_callback(
     Output("record-button", "children"),
     Input("recording-state", "data"),
 )
+
+
+@callback(
+    Output("example-dictation", "children"),
+    Input("language-selector", "value"),
+)
+def update_example_dictation(language: str):
+    """Update the example dictation text when language changes."""
+    return get_example_dictation(language)
 
 
 @callback(
