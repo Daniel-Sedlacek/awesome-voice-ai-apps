@@ -5,7 +5,7 @@ Uses gpt-5-nano with few-shot examples for structured extraction.
 
 import os
 import json
-from openai import AzureOpenAI
+from openai import OpenAI
 from dotenv import load_dotenv
 
 from data_models import PeriodontalExam, ToothData, SiteMeasurement
@@ -13,12 +13,11 @@ from data_models import PeriodontalExam, ToothData, SiteMeasurement
 # Load environment variables
 load_dotenv()
 
-# Azure OpenAI configuration
+# Azure AI Foundry configuration
+# Note: Azure AI Foundry uses the standard OpenAI client with base_url
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "")
 AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY", "")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5-nano")
-AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2025-08-07")
-
 
 class ExtractionError(Exception):
     """Custom exception for extraction errors."""
@@ -96,15 +95,20 @@ SYSTEM_PROMPT = """You are a dental data extraction assistant. Extract periodont
 Now extract data from the following transcription. Return ONLY valid JSON, no additional text."""
 
 
-def get_openai_client() -> AzureOpenAI:
-    """Create and return Azure OpenAI client."""
+def get_openai_client() -> OpenAI:
+    """Create and return OpenAI client configured for Azure AI Foundry."""
     if not AZURE_OPENAI_ENDPOINT or not AZURE_OPENAI_KEY:
         raise ExtractionError("Azure OpenAI credentials not configured")
 
-    return AzureOpenAI(
-        azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    # Azure AI Foundry uses the standard OpenAI client with base_url
+    # Endpoint should be like: https://your-resource.openai.azure.com/openai/v1/
+    base_url = AZURE_OPENAI_ENDPOINT.rstrip("/")
+    if not base_url.endswith("/openai/v1"):
+        base_url = f"{base_url}/openai/v1"
+
+    return OpenAI(
+        base_url=base_url,
         api_key=AZURE_OPENAI_KEY,
-        api_version=AZURE_OPENAI_API_VERSION,
     )
 
 
@@ -133,8 +137,7 @@ def extract_periodontal_data(transcription: str) -> PeriodontalExam:
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": transcription},
             ],
-            temperature=0.1,  # Low temperature for consistent extraction
-            max_tokens=4000,
+            # max_completion_tokens=4000,
             response_format={"type": "json_object"},
         )
 
