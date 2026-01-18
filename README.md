@@ -20,7 +20,7 @@ A collection of voice-powered AI applications exploring the exciting world of co
 These are my fun side projects that I want to share to inspire and help other developers make the world a better place. Each project explores different aspects of voice AI technology, from multilingual speech synthesis applications, to full voice AI agents.
 
 
-## Projects
+## Apps
 
 | Project | Description | Technologies |
 |---------|-------------|--------------|
