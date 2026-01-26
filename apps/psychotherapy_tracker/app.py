@@ -138,6 +138,18 @@ app.layout = html.Div(
                     ],
                     className="monologue-selector",
                 ),
+                # Sample text section
+                html.Div(
+                    [
+                        html.H3("Sample text to read:"),
+                        html.P(
+                            id="sample-text",
+                            children=get_monologue_text("en-US", "high_anxiety"),
+                            className="sample-text",
+                        ),
+                    ],
+                    className="sample-section",
+                ),
                 # Recording section
                 html.Div(
                     [
@@ -146,11 +158,6 @@ app.layout = html.Div(
                             id="record-button",
                             n_clicks=0,
                             className="record-button ready",
-                        ),
-                        html.Div(
-                            id="timer-display",
-                            children="0:30",
-                            className="timer-display",
                         ),
                     ],
                     className="record-section",
@@ -164,18 +171,6 @@ app.layout = html.Div(
             ],
             className="control-panel",
         ),
-        # Sample text section
-        html.Div(
-            [
-                html.H3("Sample text to read:"),
-                html.P(
-                    id="sample-text",
-                    children=get_monologue_text("en-US", "high_anxiety"),
-                    className="sample-text",
-                ),
-            ],
-            className="sample-section",
-        ),
         # Results section
         html.Div(
             id="results-container",
@@ -187,7 +182,6 @@ app.layout = html.Div(
         dcc.Store(id="session-result-store", data=None),
         dcc.Store(id="all-sessions-store", data=[]),
         dcc.Store(id="locale-store", data="en-US"),
-        dcc.Interval(id="timer-interval", interval=1000, disabled=True),
     ],
     className="app-container",
 )
@@ -198,9 +192,13 @@ clientside_callback(
     """
     async function(n_clicks, recordingState) {
         if (!n_clicks) {
-            return [window.dash_clientside.no_update, window.dash_clientside.no_update,
-                    window.dash_clientside.no_update, window.dash_clientside.no_update,
-                    window.dash_clientside.no_update, window.dash_clientside.no_update];
+            return [
+                window.dash_clientside.no_update,
+                window.dash_clientside.no_update,
+                window.dash_clientside.no_update,
+                window.dash_clientside.no_update,
+                window.dash_clientside.no_update
+            ];
         }
 
         const isRecording = recordingState?.isRecording || false;
@@ -212,7 +210,6 @@ clientside_callback(
                 return [
                     {isRecording: true},
                     null,
-                    false,  // Enable timer interval
                     "Recording...",
                     "status-display recording",
                     "record-button recording"
@@ -221,7 +218,6 @@ clientside_callback(
                 return [
                     {isRecording: false},
                     null,
-                    true,
                     "Error: " + (result.error || "Could not access microphone"),
                     "status-display error",
                     "record-button ready"
@@ -234,7 +230,6 @@ clientside_callback(
                 return [
                     {isRecording: false},
                     result.audioData,
-                    true,  // Disable timer interval
                     "Processing audio...",
                     "status-display processing",
                     "record-button ready"
@@ -243,7 +238,6 @@ clientside_callback(
                 return [
                     {isRecording: false},
                     null,
-                    true,
                     "Error: " + (result.error || "Recording failed"),
                     "status-display error",
                     "record-button ready"
@@ -255,7 +249,6 @@ clientside_callback(
     [
         Output("recording-state", "data"),
         Output("audio-data-store", "data"),
-        Output("timer-interval", "disabled"),
         Output("status-display", "children"),
         Output("status-display", "className"),
         Output("record-button", "className"),
@@ -263,24 +256,6 @@ clientside_callback(
     Input("record-button", "n_clicks"),
     State("recording-state", "data"),
     prevent_initial_call=True,
-)
-
-
-# Clientside callback for updating timer display
-clientside_callback(
-    """
-    function(n_intervals, recordingState) {
-        if (!recordingState?.isRecording) {
-            return "0:30";
-        }
-        const state = window.dashAudioRecorder.getRecordingState();
-        const remaining = Math.ceil(state.remaining);
-        return "0:" + (remaining < 10 ? "0" : "") + remaining;
-    }
-    """,
-    Output("timer-display", "children"),
-    Input("timer-interval", "n_intervals"),
-    State("recording-state", "data"),
 )
 
 
