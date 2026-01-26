@@ -24,8 +24,10 @@ These are my fun side projects that I want to share to inspire and help other de
 
 | Project | Description | Technologies |
 |---------|-------------|--------------|
-| [Public Transport Voice](./apps/public_transport_voice) | Multilingual announcement system that breaks language barriers in public transport | Azure STT and TTS, Azure Translator |
+| [Psychotherapy Tracker](./apps/psychotherapy_tracker) | Dictation system that creates reports of psychotherapy sesssions and tracks user psychological metrics | Azure STT, Azure OpenAI |
 | [Dictation for Dental Hygienists](./apps/dictation_for_dental_hygienists) | Dictation system that allows dental hygienists to enter periodental measurements into patient management system hands-free | Azure STT, Azure OpenAI |
+| [Public Transport Voice](./apps/public_transport_voice) | Multilingual announcement system that breaks language barriers in public transport | Azure STT and TTS, Azure Translator |
+
 
 
 
