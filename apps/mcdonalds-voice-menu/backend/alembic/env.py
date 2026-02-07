@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 # Import your models and settings
-from mcdonalds_menu.config import get_settings
-from mcdonalds_menu.models import Base
+from src.config import get_settings
+from src.models import Base
 
 config = context.config
 settings = get_settings()
