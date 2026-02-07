@@ -1,5 +1,4 @@
-from functools import lru_cache
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from msgspec_ext import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -7,29 +6,25 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=True,
     )
 
     # Azure Speech
     AZURE_SPEECH_KEY: str
-    AZURE_SPEECH_REGION: str
+    AZURE_SPEECH_REGION: str = "westeurope"
 
     # Azure OpenAI
     AZURE_OPENAI_ENDPOINT: str
     AZURE_OPENAI_KEY: str
-    AZURE_OPENAI_DEPLOYMENT: str
+    AZURE_OPENAI_DEPLOYMENT: str = "gpt-5.2-nano"
 
-    #Database
+    # Database
     DATABASE_URL: str = "postgresql+asyncpg://mcdonalds:mcdonalds@localhost:5432/mcdonalds_menu"
 
-    # Embeddin model
-    EMBEDDING_MODEL_NAME: str = "intfload/multilingual-e5-large-instruct"
+    # Embedding model
+    EMBEDDING_MODEL_NAME: str = "intfloat/multilingual-e5-large-instruct"
     EMBEDDING_DIMENSION: int = 1024
 
 
-
-@lru_cache
 def get_settings() -> Settings:
-    """Get application settings."""
+    """Get settings instance (cached internally by msgspec-ext after first load)."""
     return Settings()
