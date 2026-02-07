@@ -9,20 +9,20 @@ class Settings(BaseSettings):
     )
 
     # Azure Speech
-    AZURE_SPEECH_KEY: str
-    AZURE_SPEECH_REGION: str = "westeurope"
+    # AZURE_SPEECH_KEY: str
+    # AZURE_SPEECH_REGION: str = "westeurope"
 
     # Azure OpenAI
-    AZURE_OPENAI_ENDPOINT: str
-    AZURE_OPENAI_KEY: str
-    AZURE_OPENAI_DEPLOYMENT: str = "gpt-5.2-nano"
+    # AZURE_OPENAI_ENDPOINT: str
+    # AZURE_OPENAI_KEY: str
+    # AZURE_OPENAI_DEPLOYMENT: str = "gpt-5.2-nano"
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://mcdonalds:mcdonalds@localhost:5432/mcdonalds_menu"
 
     # Embedding model
-    EMBEDDING_MODEL_NAME: str = "intfloat/multilingual-e5-large-instruct"
-    EMBEDDING_DIMENSION: int = 1024
+    # EMBEDDING_MODEL_NAME: str = "intfloat/multilingual-e5-large-instruct"
+    # EMBEDDING_DIMENSION: int = 1024
 
 
 def get_settings() -> Settings:
