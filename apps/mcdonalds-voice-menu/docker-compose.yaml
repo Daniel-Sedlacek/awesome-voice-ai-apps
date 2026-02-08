@@ -1,5 +1,6 @@
 services:
   db:
+    container_name: db
     image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: mcdonalds
@@ -11,6 +12,7 @@ services:
       - pgdata:/var/lib/postgresql/data
   
   backend:
+    container_name: backend
     build: ./backend
     env_file:
       - ./backend/.env
@@ -22,6 +24,7 @@ services:
       - ./backend/static:/app/static
 
   frontend:
+    container_name: frontend
     build: ./frontend
     ports:
       - "5173:5173"
