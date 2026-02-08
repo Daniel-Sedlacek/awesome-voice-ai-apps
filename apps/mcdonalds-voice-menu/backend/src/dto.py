@@ -4,5 +4,5 @@ from litestar.dto import DTOConfig
 from src.models import MenuItem
 
 
-class MenuItemDTO(SQLAlchemyDTO[MenuItem]):
+class MenuItemReadDTO(SQLAlchemyDTO[MenuItem]):
     config = DTOConfig(exclude=["embedding"])
