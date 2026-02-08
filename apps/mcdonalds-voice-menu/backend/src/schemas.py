@@ -1,5 +1,7 @@
 from msgspec import Struct
 
+from src.models import MenuItem
+
 
 class AudioRequest(Struct):
     """Request body for the audio processing endpoint."""
@@ -29,3 +31,20 @@ class AudioResponse(Struct):
     transcript: str = ""
     session_id: str = ""
     message: str = ""
+
+
+def menu_item_to_response(item: MenuItem) -> MenuItemResponse:
+    """Convert a SQLAlchemy MenuItem to a MenuItemResponse struct."""
+    return MenuItemResponse(
+        id=item.id,
+        name=item.name,
+        description=item.description,
+        price=item.price,
+        category=item.category,
+        tags=item.tags,
+        image_url=item.image_url,
+        name_de=item.name_de,
+        name_cs=item.name_cs,
+        description_de=item.description_de,
+        description_cs=item.description_cs
+    )
