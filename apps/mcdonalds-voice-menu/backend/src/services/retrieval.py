@@ -39,7 +39,7 @@ async def get_item_ids_by_names(session: AsyncSession, names: list[str]) -> list
         return []
 
     select_query = select(MenuItem.id).where(
-        MenuItem.name.in_([n.lower() for n in names])
+        func.lower(MenuItem.name).in_([str(n).lower() for n in names])
     )
     result = await session.execute(select_query)
     return list(result.scalars().all())
