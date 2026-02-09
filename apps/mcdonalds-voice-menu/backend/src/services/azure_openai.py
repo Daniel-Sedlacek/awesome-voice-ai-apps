@@ -49,14 +49,16 @@ async def parse_intent(transcript: str, conversation_history: list[dict]) -> dic
 
     # Add conversation history for context
     for entry in conversation_history:
-        messages.append({"role": "user", "content": transcript})
+        messages.append({"role": "user", "content": entry["text"]})
+    
+    messages.append({"role": "user", "content": transcript})
 
-        response = client.chat.completions.create(
-            model=settings.AZURE_OPENAI_DEPLOYMENT,
-            messages=messages,
-            response_format={"type": "json_object"},
-            temperature=0.1,
-            verbosity="low"
-        )
+    response = client.chat.completions.create(
+        model=settings.AZURE_OPENAI_DEPLOYMENT,
+        messages=messages,
+        response_format={"type": "json_object"},
+        temperature=0.1,
+        verbosity="low"
+    )
 
     return json.loads(response.choices[0].message.content)
