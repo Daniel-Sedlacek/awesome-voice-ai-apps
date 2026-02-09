@@ -11,7 +11,7 @@ class UserSession:
     conversation_history: list[dict] = field(default_factory=list)
     accumulated_criteria: str = ""
     displayed_item_ids: list[int] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.now(ZoneInfo("UTC")))
+    created_at: datetime = field(default_factory=lambda: datetime.now(ZoneInfo("UTC")))
 
     def add_utterance(self, text: str, intent: str):
         """Add a user utterance to the conversation history."""
