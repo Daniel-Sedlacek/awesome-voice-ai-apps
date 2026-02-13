@@ -22,8 +22,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://mcdonalds:mcdonalds@localhost:5432/mcdonalds_menu"
 
     # Embedding model
-    EMBEDDING_MODEL_NAME: str = "intfloat/multilingual-e5-large-instruct"
-    EMBEDDING_DIMENSION: int = 1024
+    EMBEDDING_MODEL_NAME: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    EMBEDDING_DIMENSION: int = 384
 
 
 def get_settings() -> Settings:

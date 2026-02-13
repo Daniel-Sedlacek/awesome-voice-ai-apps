@@ -17,7 +17,7 @@ class MenuItem(Base):
     category: Mapped[str] = mapped_column(String(100))
     tags: Mapped[list[str]] = mapped_column(ARRAY(String(100)))
     image_url: Mapped[str] = mapped_column(String(200))
-    embedding: Mapped[list[float]] = mapped_column(Vector(1024))
+    embedding: Mapped[list[float]] = mapped_column(Vector(384))
 
     # Multilingual fields (for display only, embeddings are in English)
     name_de: Mapped[str] = mapped_column(String(200), nullable=True)
