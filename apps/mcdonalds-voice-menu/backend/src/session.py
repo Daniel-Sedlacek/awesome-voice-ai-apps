@@ -11,9 +11,10 @@ class UserSession:
     conversation_history: list[dict] = field(default_factory=list)
     accumulated_criteria: str = ""
     displayed_item_ids: list[int] = field(default_factory=list)
+    basket_item_ids: list[int] = field(default_factory=list)
     created_at: datetime = field(default_factory=lambda: datetime.now(ZoneInfo("UTC")))
 
-    def add_utterance(self, text: str, intent: str):
+    def add_utterance(self, text: str, intent: str, new_search: bool = False):
         """Add a user utterance to the conversation history."""
         self.conversation_history.append({
             "text": text,
@@ -21,12 +22,29 @@ class UserSession:
             "timestamp": datetime.now(ZoneInfo("UTC")).isoformat()
         })
         if intent == "ADD":
-            # Concatenate to accumulated criteria
-            self.accumulated_criteria += f"{self.accumulated_criteria} {text}".strip()
+            if new_search:
+                self.accumulated_criteria = text
+                self.displayed_item_ids = []
+            else:
+                self.accumulated_criteria = f"{self.accumulated_criteria} {text}".strip()
+
+    def add_to_basket(self, item_ids: list[int]):
+        """Add items to basket, avoiding duplicates."""
+        for item_id in item_ids:
+            if item_id not in self.basket_item_ids:
+                self.basket_item_ids.append(item_id)
+
+    def remove_from_basket(self, item_ids: list[int]):
+        """Remove items from basket."""
+        self.basket_item_ids = [
+            id for id in self.basket_item_ids
+            if id not in item_ids
+        ]
 
     def clear(self):
         self.accumulated_criteria = ""
         self.displayed_item_ids = []
+        self.basket_item_ids = []
         # Keep conversation history for context
 
 

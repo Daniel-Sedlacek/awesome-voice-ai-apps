@@ -4,11 +4,22 @@ from litestar.di import Provide
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_db_session
-from src.schemas import AudioRequest, AudioResponse, menu_item_to_response
+from src.schemas import (
+    AudioRequest,
+    AudioResponse,
+    BasketActionRequest,
+    BasketActionResponse,
+    menu_item_to_response,
+)
 from src.session import get_or_create_session
 from src.services.azure_speech import transcribe_audio
 from src.services.azure_openai import parse_intent
-from src.services.retrieval import search_menu_items, get_items_by_ids, get_item_ids_by_names
+from src.services.retrieval import (
+    search_menu_items,
+    get_items_by_ids,
+    get_item_ids_by_names,
+    get_item_ids_by_names_from_set,
+)
 
 
 class AudioController(Controller):
@@ -27,32 +38,38 @@ class AudioController(Controller):
         1. Transcribe audio
         2. Parse intent with LLM
         3. Based on intent, search/modify results
-        4. Return menu items
+        4. Return menu items + basket
         """
         session = get_or_create_session(data.session_id)
+        session.language = data.language
 
         # Transcribe audio
         audio_bytes = base64.b64decode(data.audio_base64)
         transcript = await transcribe_audio(audio_bytes, session.language)
 
         if not transcript:
+            basket_items_db = await get_items_by_ids(db, session.basket_item_ids)
             return AudioResponse(
                 transcript="",
                 message="No speech was recognized in the recording",
+                session_id=session.session_id,
+                basket_items=[menu_item_to_response(i) for i in basket_items_db],
             )
 
         # Parse intent
         intent_result = await parse_intent(transcript, session.conversation_history)
+        intent = intent_result.get("intent")
+        msg = ""
 
-        # Handle intent
-        if intent_result.get("intent") == "CLEAR":
+        if intent == "CLEAR":
             session.clear()
             return AudioResponse(
                 transcript=transcript,
-                message="Selection cleared",
+                message="Order cleared. Start fresh!",
+                session_id=session.session_id,
             )
 
-        elif intent_result.get("intent") == "REMOVE":
+        elif intent == "REMOVE":
             remove_names = intent_result.get("remove_items", [])
             removed_ids = await get_item_ids_by_names(db, remove_names)
             session.displayed_item_ids = [
@@ -60,16 +77,87 @@ class AudioController(Controller):
                 if id not in removed_ids
             ]
 
-        elif intent_result.get("intent") == "ADD":
-            session.add_utterance(transcript, "ADD")
-            items = await search_menu_items(db, session.accumulated_criteria, session.displayed_item_ids)
+        elif intent == "ADD":
+            new_search = intent_result.get("new_search", True)
+            session.add_utterance(transcript, "ADD", new_search=new_search)
+            # Exclude basket items so they don't reappear in search results
+            exclude_ids = list(set(session.displayed_item_ids + session.basket_item_ids))
+            if new_search:
+                # Fresh search — only exclude basket items
+                exclude_ids = session.basket_item_ids
+            items = await search_menu_items(
+                db, session.accumulated_criteria, exclude_ids
+            )
             session.displayed_item_ids = [item.id for item in items]
 
-        # Fetch current items and convert to response structs
+        elif intent == "SELECT":
+            select_names = intent_result.get("select_items", [])
+            selected_ids = await get_item_ids_by_names_from_set(
+                db, select_names, session.displayed_item_ids
+            )
+            if selected_ids:
+                session.add_to_basket(selected_ids)
+                session.displayed_item_ids = [
+                    id for id in session.displayed_item_ids
+                    if id not in selected_ids
+                ]
+                msg = f"Added {len(selected_ids)} item(s) to your order"
+            else:
+                msg = "Could not find those items in the current results"
+
+        elif intent == "REMOVE_FROM_BASKET":
+            basket_remove_names = intent_result.get("basket_remove_items", [])
+            removed_ids = await get_item_ids_by_names(db, basket_remove_names)
+            session.remove_from_basket(removed_ids)
+            msg = "Removed item(s) from your order"
+
+        elif intent == "CONFIRM":
+            msg = "Order confirmed! Thank you!"
+
+        # Fetch current search results and basket
         items = await get_items_by_ids(db, session.displayed_item_ids)
+        basket_items_db = await get_items_by_ids(db, session.basket_item_ids)
 
         return AudioResponse(
             items=[menu_item_to_response(item) for item in items],
+            basket_items=[menu_item_to_response(i) for i in basket_items_db],
             transcript=transcript,
             session_id=session.session_id,
+            message=msg,
+        )
+
+    @post("/basket/add")
+    async def add_to_basket(
+        self,
+        data: BasketActionRequest,
+        db: AsyncSession,
+    ) -> BasketActionResponse:
+        """Add an item to basket via click."""
+        session = get_or_create_session(data.session_id)
+        session.add_to_basket([data.item_id])
+        session.displayed_item_ids = [
+            id for id in session.displayed_item_ids
+            if id != data.item_id
+        ]
+        basket_items_db = await get_items_by_ids(db, session.basket_item_ids)
+        return BasketActionResponse(
+            basket_items=[menu_item_to_response(i) for i in basket_items_db],
+            session_id=session.session_id,
+            message="Item added to order",
+        )
+
+    @post("/basket/remove")
+    async def remove_from_basket(
+        self,
+        data: BasketActionRequest,
+        db: AsyncSession,
+    ) -> BasketActionResponse:
+        """Remove an item from basket via click."""
+        session = get_or_create_session(data.session_id)
+        session.remove_from_basket([data.item_id])
+        basket_items_db = await get_items_by_ids(db, session.basket_item_ids)
+        return BasketActionResponse(
+            basket_items=[menu_item_to_response(i) for i in basket_items_db],
+            session_id=session.session_id,
+            message="Item removed from order",
         )

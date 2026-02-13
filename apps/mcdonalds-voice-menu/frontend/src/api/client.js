@@ -32,6 +32,22 @@ export async function getMenuByCategory(category) {
   return response.data
 }
 
+export async function addToBasket(sessionId, itemId) {
+  const response = await apiClient.post('/basket/add', {
+    session_id: sessionId,
+    item_id: itemId,
+  })
+  return response.data
+}
+
+export async function removeFromBasket(sessionId, itemId) {
+  const response = await apiClient.post('/basket/remove', {
+    session_id: sessionId,
+    item_id: itemId,
+  })
+  return response.data
+}
+
 async function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()

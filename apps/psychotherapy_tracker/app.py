@@ -192,13 +192,9 @@ clientside_callback(
     """
     async function(n_clicks, recordingState) {
         if (!n_clicks) {
-            return [
-                window.dash_clientside.no_update,
-                window.dash_clientside.no_update,
-                window.dash_clientside.no_update,
-                window.dash_clientside.no_update,
-                window.dash_clientside.no_update
-            ];
+            return [window.dash_clientside.no_update, window.dash_clientside.no_update,
+                    window.dash_clientside.no_update, window.dash_clientside.no_update,
+                    window.dash_clientside.no_update, window.dash_clientside.no_update];
         }
 
         const isRecording = recordingState?.isRecording || false;

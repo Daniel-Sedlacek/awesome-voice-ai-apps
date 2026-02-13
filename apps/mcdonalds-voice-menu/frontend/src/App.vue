@@ -1,9 +1,10 @@
 <script setup>
 import { useSession } from '@/composables/useSession'
-import { processAudio } from '@/api/client'
+import { processAudio, addToBasket, removeFromBasket } from '@/api/client'
 import LanguageSelector from '@/components/LanguageSelector.vue'
 import AudioRecorder from '@/components/AudioRecorder.vue'
 import MenuGrid from '@/components/MenuGrid.vue'
+import BasketPanel from '@/components/BasketPanel.vue'
 
 const {
   sessionId,
@@ -11,9 +12,12 @@ const {
   transcript,
   message,
   menuItems,
+  basketItems,
+  basketTotal,
   isProcessing,
   supportedLanguages,
   updateFromResponse,
+  updateBasketFromResponse,
 } = useSession()
 
 async function handleRecorded(audioBlob) {
@@ -27,6 +31,29 @@ async function handleRecorded(audioBlob) {
     console.error('Audio processing error:', err)
   } finally {
     isProcessing.value = false
+  }
+}
+
+async function handleAddToBasket(itemId) {
+  if (!sessionId.value) return
+  try {
+    const response = await addToBasket(sessionId.value, itemId)
+    updateBasketFromResponse(response)
+    menuItems.value = menuItems.value.filter(item => item.id !== itemId)
+  } catch (err) {
+    message.value = 'Failed to add item to order.'
+    console.error('Add to basket error:', err)
+  }
+}
+
+async function handleRemoveFromBasket(itemId) {
+  if (!sessionId.value) return
+  try {
+    const response = await removeFromBasket(sessionId.value, itemId)
+    updateBasketFromResponse(response)
+  } catch (err) {
+    message.value = 'Failed to remove item from order.'
+    console.error('Remove from basket error:', err)
   }
 }
 </script>
@@ -56,9 +83,30 @@ async function handleRecorded(audioBlob) {
       <p v-if="message" class="text-mcdonalds-yellow text-center">{{ message }}</p>
     </div>
 
-    <!-- Menu Results -->
+    <!-- Main Content: Search Results + Basket -->
     <main class="px-4 pb-12 max-w-7xl mx-auto">
-      <MenuGrid :items="menuItems" :language="language" />
+      <div class="flex flex-col lg:flex-row gap-6">
+        <!-- Search Results -->
+        <div class="flex-1 min-w-0">
+          <MenuGrid
+            :items="menuItems"
+            :language="language"
+            @add-to-basket="handleAddToBasket"
+          />
+        </div>
+
+        <!-- Basket Panel -->
+        <div class="lg:w-80 shrink-0">
+          <div class="lg:sticky lg:top-4">
+            <BasketPanel
+              :items="basketItems"
+              :language="language"
+              :total="basketTotal"
+              @remove="handleRemoveFromBasket"
+            />
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 </template>

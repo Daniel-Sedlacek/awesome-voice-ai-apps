@@ -28,7 +28,21 @@ class MenuItemResponse(Struct):
 class AudioResponse(Struct):
     """Response body for the audio processing endpoint."""
     items: list[MenuItemResponse] = []
+    basket_items: list[MenuItemResponse] = []
     transcript: str = ""
+    session_id: str = ""
+    message: str = ""
+
+
+class BasketActionRequest(Struct):
+    """Request body for click-based basket add/remove."""
+    session_id: str
+    item_id: int
+
+
+class BasketActionResponse(Struct):
+    """Response body for basket actions."""
+    basket_items: list[MenuItemResponse] = []
     session_id: str = ""
     message: str = ""
 
