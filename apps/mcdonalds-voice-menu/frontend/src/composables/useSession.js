@@ -16,7 +16,7 @@ export function useSession() {
   ]
 
   const basketTotal = computed(() => {
-    return basketItems.value.reduce((sum, item) => sum + item.price, 0)
+    return basketItems.value.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0)
   })
 
   function updateFromResponse(response) {

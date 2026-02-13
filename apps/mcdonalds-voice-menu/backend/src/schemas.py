@@ -23,6 +23,7 @@ class MenuItemResponse(Struct):
     name_cs: str | None = None
     description_de: str | None = None
     description_cs: str | None = None
+    quantity: int = 1
 
 
 class AudioResponse(Struct):
@@ -47,7 +48,7 @@ class BasketActionResponse(Struct):
     message: str = ""
 
 
-def menu_item_to_response(item: MenuItem) -> MenuItemResponse:
+def menu_item_to_response(item: MenuItem, quantity: int = 1) -> MenuItemResponse:
     """Convert a SQLAlchemy MenuItem to a MenuItemResponse struct."""
     return MenuItemResponse(
         id=item.id,
@@ -60,5 +61,6 @@ def menu_item_to_response(item: MenuItem) -> MenuItemResponse:
         name_de=item.name_de,
         name_cs=item.name_cs,
         description_de=item.description_de,
-        description_cs=item.description_cs
+        description_cs=item.description_cs,
+        quantity=quantity,
     )

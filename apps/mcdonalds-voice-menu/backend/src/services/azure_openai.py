@@ -56,6 +56,8 @@ User: "I'll take the Big Mac" → {"intent": "SELECT", "select_items": ["Big Mac
 User: "Add the McFlurry and the fries to my order" → {"intent": "SELECT", "select_items": ["McFlurry", "French Fries"]}
 User: "Yes, the cheeseburger please" → {"intent": "SELECT", "select_items": ["Cheeseburger"]}
 User: "I would buy a cheeseburger" → {"intent": "SELECT", "select_items": ["Cheeseburger"]}
+User: "One more cheeseburger please" → {"intent": "SELECT", "select_items": ["Cheeseburger"]}
+User: "Another Big Mac" → {"intent": "SELECT", "select_items": ["Big Mac"]}
 User: "Remove the Big Mac from my order" → {"intent": "REMOVE_FROM_BASKET", "basket_remove_items": ["Big Mac"]}
 User: "I don't want the fries anymore" → {"intent": "REMOVE_FROM_BASKET", "basket_remove_items": ["French Fries"]}
 User: "Take the McChicken off my order" → {"intent": "REMOVE_FROM_BASKET", "basket_remove_items": ["McChicken"]}

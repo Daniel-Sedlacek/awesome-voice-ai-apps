@@ -13,7 +13,7 @@ from src.schemas import (
     BasketActionResponse,
     menu_item_to_response,
 )
-from src.session import get_or_create_session
+from src.session import UserSession, get_or_create_session
 from src.services.azure_speech import transcribe_audio
 from src.services.azure_openai import parse_intent
 from src.services.embeddings import create_query_embedding
@@ -47,6 +47,16 @@ class PipelineTimer:
         print(f"  {parts}")
         print(f"  Total: {total * 1000:.0f}ms")
         print(f"{'=' * 60}\n")
+
+
+def _basket_responses(items_db, session: UserSession):
+    """Build basket item responses preserving session order and including quantities."""
+    by_id = {item.id: item for item in items_db}
+    return [
+        menu_item_to_response(by_id[item_id], session.basket_quantities.get(item_id, 1))
+        for item_id in session.basket_item_ids
+        if item_id in by_id
+    ]
 
 
 class AudioController(Controller):
@@ -83,7 +93,7 @@ class AudioController(Controller):
                 transcript="",
                 message="No speech was recognized in the recording",
                 session_id=session.session_id,
-                basket_items=[menu_item_to_response(i) for i in basket_items_db],
+                basket_items=_basket_responses(basket_items_db, session),
             )
 
         # Fetch current item names for LLM context
@@ -135,9 +145,12 @@ class AudioController(Controller):
 
         elif intent == "SELECT":
             select_names = intent_result.get("select_items", [])
+            # First try displayed items, then fall back to full menu
             selected_ids = await get_item_ids_by_names_from_set(
                 db, select_names, session.displayed_item_ids
             )
+            if not selected_ids:
+                selected_ids = await get_item_ids_by_names(db, select_names)
             if selected_ids:
                 session.add_to_basket(selected_ids)
                 session.displayed_item_ids = [
@@ -146,7 +159,7 @@ class AudioController(Controller):
                 ]
                 msg = f"Added {len(selected_ids)} item(s) to your order"
             else:
-                msg = "Could not find those items in the current results"
+                msg = "Could not find those items in the menu"
             timer.mark("DB Select")
 
         elif intent == "REMOVE_FROM_BASKET":
@@ -168,7 +181,7 @@ class AudioController(Controller):
 
         return AudioResponse(
             items=[menu_item_to_response(item) for item in items],
-            basket_items=[menu_item_to_response(i) for i in basket_items_db],
+            basket_items=_basket_responses(basket_items_db, session),
             transcript=transcript,
             session_id=session.session_id,
             message=msg,
@@ -189,7 +202,7 @@ class AudioController(Controller):
         ]
         basket_items_db = await get_items_by_ids(db, session.basket_item_ids)
         return BasketActionResponse(
-            basket_items=[menu_item_to_response(i) for i in basket_items_db],
+            basket_items=_basket_responses(basket_items_db, session),
             session_id=session.session_id,
             message="Item added to order",
         )
@@ -205,7 +218,7 @@ class AudioController(Controller):
         session.remove_from_basket([data.item_id])
         basket_items_db = await get_items_by_ids(db, session.basket_item_ids)
         return BasketActionResponse(
-            basket_items=[menu_item_to_response(i) for i in basket_items_db],
+            basket_items=_basket_responses(basket_items_db, session),
             session_id=session.session_id,
             message="Item removed from order",
         )

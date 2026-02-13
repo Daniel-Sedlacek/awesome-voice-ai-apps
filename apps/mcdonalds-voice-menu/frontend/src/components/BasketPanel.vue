@@ -36,7 +36,7 @@ function getLocalizedName(item, language) {
         v-if="items.length"
         class="bg-mcdonalds-yellow text-mcdonalds-red text-sm rounded-full w-6 h-6 flex items-center justify-center font-bold"
       >
-        {{ items.length }}
+        {{ items.reduce((sum, i) => sum + (i.quantity || 1), 0) }}
       </span>
     </h2>
 
@@ -62,10 +62,10 @@ function getLocalizedName(item, language) {
           />
           <div class="min-w-0">
             <p class="text-white font-medium text-sm truncate">
-              {{ getLocalizedName(item, language) }}
+              <span v-if="item.quantity > 1" class="text-mcdonalds-yellow font-bold">{{ item.quantity }}&times; </span>{{ getLocalizedName(item, language) }}
             </p>
             <p class="text-mcdonalds-yellow text-sm font-bold">
-              ${{ item.price.toFixed(2) }}
+              ${{ (item.price * (item.quantity || 1)).toFixed(2) }}
             </p>
           </div>
         </div>
