@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     # Azure OpenAI
     AZURE_OPENAI_ENDPOINT: str
     AZURE_OPENAI_KEY: str
-    AZURE_OPENAI_DEPLOYMENT: str = "gpt-5.2-nano"
+    AZURE_OPENAI_DEPLOYMENT: str = "gpt-4.1-mini"
+    AZURE_OPENAI_API_VERSION: str = "2024-12-01-preview"
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://mcdonalds:mcdonalds@localhost:5432/mcdonalds_menu"

@@ -4,14 +4,12 @@ from src.config import get_settings
 
 
 def get_openai_client() -> OpenAI:
-    """Get Azure OpenAI client (OpenAI-compatible endpoint)"""
+    """Get OpenAI client"""
     settings = get_settings()
-    base_url = settings.AZURE_OPENAI_ENDPOINT.rstrip("/")
-    if not base_url.endswith("/openai/v1"):
-        base_url = f"{base_url}/openai/v1"
     return OpenAI(
         api_key=settings.AZURE_OPENAI_KEY,
-        base_url=base_url,
+        base_url=settings.AZURE_OPENAI_ENDPOINT,
+        # api_version=settings.AZURE_OPENAI_API_VERSION,
     )
 
 
