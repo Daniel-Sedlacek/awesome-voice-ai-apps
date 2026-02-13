@@ -1,17 +1,15 @@
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.models import MenuItem
-from src.services.embeddings import create_query_embedding
 
 
 async def search_menu_items(
-    session: AsyncSession, query: str, exclude_ids: list[int] | None = None, top_k: int = 5
+    session: AsyncSession,
+    query_embedding: list[float],
+    exclude_ids: list[int] | None = None,
+    top_k: int = 5,
 ) -> list[MenuItem]:
-    """Search menu items based on query using vector similarity search."""
-    # Create query embedding with instructions prefix
-    query_embedding = create_query_embedding(query)
-
-    # Search by cosine similarity
+    """Search menu items by pre-computed embedding using vector similarity."""
     select_query = (
         select(MenuItem)
         .order_by(MenuItem.embedding.cosine_distance(query_embedding))
