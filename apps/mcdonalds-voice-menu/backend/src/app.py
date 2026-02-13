@@ -1,9 +1,21 @@
+import logging
+
 from litestar import Litestar
 from litestar.config.cors import CORSConfig
 from litestar.static_files import StaticFilesConfig
 
 from src.routes.audio import AudioController
 from src.routes.menu import MenuController
+from src.services.embeddings import get_embedding_model
+
+logger = logging.getLogger(__name__)
+
+
+async def preload_embedding_model() -> None:
+    """Pre-download and load the embedding model at server startup."""
+    logger.info("Loading embedding model...")
+    get_embedding_model()
+    logger.info("Embedding model loaded.")
 
 
 # CORS configuration for frontend
@@ -22,5 +34,6 @@ app = Litestar(
             path="/static",
         )
     ],
+    on_startup=[preload_embedding_model],
     debug=True,
 )
