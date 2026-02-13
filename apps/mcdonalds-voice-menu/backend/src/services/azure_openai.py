@@ -35,8 +35,13 @@ Analyze the user's speech and determine their intent.
   "basket_remove_items": ["item names to remove from basket (only for REMOVE_FROM_BASKET)"]
 }
 
+## Context You Receive
+Before each user message, you will see:
+- [Displayed Items]: The menu items currently shown on screen. If the user names one of these, use SELECT (not ADD).
+- [Basket Items]: The items already in the user's order. If the user wants to remove one of these, use REMOVE_FROM_BASKET.
+
 ## Key Distinction
-- ADD vs SELECT: ADD means the user is searching/browsing ("show me burgers", "I want something spicy"). SELECT means the user has decided on a specific item from what they see ("I'll take the Big Mac", "add the McFlurry to my order", "yes, the cheeseburger please").
+- ADD vs SELECT: ADD means the user is searching/browsing ("show me burgers", "I want something spicy"). SELECT means the user has decided on a specific item — especially if the item is in the displayed items list ("I'll take the Big Mac", "add the McFlurry to my order", "yes, the cheeseburger please", "I want a Sprite" when Sprite is displayed). When the user names a specific item that is currently displayed, ALWAYS use SELECT.
 - REMOVE vs REMOVE_FROM_BASKET: REMOVE removes from search results ("don't show me the salad"). REMOVE_FROM_BASKET removes from the user's order ("remove the Big Mac from my order", "take the fries off my order").
 - new_search (for ADD only): Set to true when the user is asking about a completely different category or topic (e.g. switching from burgers to drinks). Set to false when the user is refining or narrowing their current search (e.g. "with cheese" after asking for burgers). When in doubt, set to true.
 
@@ -59,7 +64,12 @@ User: "That looks good, I'm done" → {"intent": "CONFIRM"}
 """
 
 
-async def parse_intent(transcript: str, conversation_history: list[dict]) -> dict:
+async def parse_intent(
+    transcript: str,
+    conversation_history: list[dict],
+    displayed_items: list[str] | None = None,
+    basket_items: list[str] | None = None,
+) -> dict:
     """Parse user intent from transcript using Azure OpenAI"""
     settings = get_settings()
     client = get_openai_client()
@@ -69,8 +79,16 @@ async def parse_intent(transcript: str, conversation_history: list[dict]) -> dic
     # Add conversation history for context
     for entry in conversation_history:
         messages.append({"role": "user", "content": entry["text"]})
-    
-    messages.append({"role": "user", "content": transcript})
+
+    # Build context + transcript message
+    context_parts = []
+    displayed = ", ".join(displayed_items) if displayed_items else "None"
+    context_parts.append(f"[Displayed Items]: {displayed}")
+    basket = ", ".join(basket_items) if basket_items else "None"
+    context_parts.append(f"[Basket Items]: {basket}")
+
+    context_block = "\n".join(context_parts)
+    messages.append({"role": "user", "content": f"{context_block}\n\nUser said: {transcript}"})
 
     response = client.chat.completions.create(
         model=settings.AZURE_OPENAI_DEPLOYMENT,

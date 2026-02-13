@@ -33,6 +33,18 @@ async def get_items_by_ids(
     return result.scalars().all()
 
 
+async def get_item_names_by_ids(
+    session: AsyncSession, item_ids: list[int]
+) -> list[str]:
+    """Get menu item names by their IDs (lightweight, no embedding data)."""
+    if not item_ids:
+        return []
+
+    select_query = select(MenuItem.name).where(MenuItem.id.in_(item_ids))
+    result = await session.execute(select_query)
+    return list(result.scalars().all())
+
+
 async def get_item_ids_by_names_from_set(
     session: AsyncSession, names: list[str], candidate_ids: list[int]
 ) -> list[int]:

@@ -22,6 +22,7 @@ from src.services.retrieval import (
     get_items_by_ids,
     get_item_ids_by_names,
     get_item_ids_by_names_from_set,
+    get_item_names_by_ids,
 )
 
 
@@ -85,8 +86,14 @@ class AudioController(Controller):
                 basket_items=[menu_item_to_response(i) for i in basket_items_db],
             )
 
+        # Fetch current item names for LLM context
+        displayed_names = await get_item_names_by_ids(db, session.displayed_item_ids)
+        basket_names = await get_item_names_by_ids(db, session.basket_item_ids)
+
         # Parse intent
-        intent_result = await parse_intent(transcript, session.conversation_history)
+        intent_result = await parse_intent(
+            transcript, session.conversation_history, displayed_names, basket_names
+        )
         intent = intent_result.get("intent")
         timer.mark("LLM")
         msg = ""
