@@ -1,6 +1,7 @@
 <script setup>
 import { useSession } from '@/composables/useSession'
-import { processAudio, addToBasket, removeFromBasket } from '@/api/client'
+import { useWebSocketAudio } from '@/composables/useWebSocketAudio'
+import { addToBasket, removeFromBasket } from '@/api/client'
 import LanguageSelector from '@/components/LanguageSelector.vue'
 import AudioRecorder from '@/components/AudioRecorder.vue'
 import MenuGrid from '@/components/MenuGrid.vue'
@@ -15,23 +16,52 @@ const {
   basketItems,
   basketTotal,
   isProcessing,
+  interimTranscript,
+  isOrdering,
   supportedLanguages,
   updateFromResponse,
   updateBasketFromResponse,
 } = useSession()
 
-async function handleRecorded(audioBlob) {
-  isProcessing.value = true
+const {
+  isListening,
+  interimTranscript: wsInterim,
+  connect,
+  startListening,
+  stopListening,
+  disconnect,
+  error: audioError,
+} = useWebSocketAudio()
+
+async function handleStartOrdering() {
+  isProcessing.value = false
   message.value = ''
+
   try {
-    const response = await processAudio(audioBlob, sessionId.value, language.value)
-    updateFromResponse(response)
+    const sid = await connect(sessionId.value, language.value, {
+      onResults(msg) {
+        updateFromResponse(msg)
+        isProcessing.value = false
+      },
+      onProcessing(text) {
+        transcript.value = text
+        isProcessing.value = true
+      },
+    })
+    sessionId.value = sid
+    isOrdering.value = true
+    await startListening()
   } catch (err) {
-    message.value = 'Failed to process audio. Please try again.'
-    console.error('Audio processing error:', err)
-  } finally {
-    isProcessing.value = false
+    message.value = 'Failed to connect. Please try again.'
+    console.error('WS connect error:', err)
   }
+}
+
+async function handleStopOrdering() {
+  await stopListening()
+  disconnect()
+  isOrdering.value = false
+  interimTranscript.value = ''
 }
 
 async function handleAddToBasket(itemId) {
@@ -71,16 +101,22 @@ async function handleRemoveFromBasket(itemId) {
       <LanguageSelector
         v-model="language"
         :languages="supportedLanguages"
+        :disabled="isOrdering"
       />
       <AudioRecorder
-        :disabled="isProcessing"
-        @recorded="handleRecorded"
+        :is-ordering="isOrdering"
+        :is-listening="isListening"
+        :interim-transcript="wsInterim"
+        :disabled="isProcessing && !isOrdering"
+        @start="handleStartOrdering"
+        @stop="handleStopOrdering"
       />
       <p v-if="isProcessing" class="text-mcdonalds-yellow animate-pulse">Processing...</p>
-      <p v-if="transcript" class="text-white/90 text-center max-w-md">
+      <p v-if="transcript && !isProcessing" class="text-white/90 text-center max-w-md">
         "{{ transcript }}"
       </p>
       <p v-if="message" class="text-mcdonalds-yellow text-center">{{ message }}</p>
+      <p v-if="audioError" class="text-sm text-red-400">{{ audioError }}</p>
     </div>
 
     <!-- Main Content: Search Results + Basket -->

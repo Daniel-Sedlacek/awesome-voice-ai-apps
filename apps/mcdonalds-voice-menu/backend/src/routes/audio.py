@@ -60,82 +60,95 @@ def _basket_responses(items_db, session: UserSession):
     ]
 
 
-class AudioController(Controller):
-    path = "/api"
-    dependencies = {"db": Provide(get_db_session)}
+async def run_pipeline(
+    session: UserSession,
+    transcript: str,
+    db: AsyncSession,
+    timer: PipelineTimer | None = None,
+) -> AudioResponse:
+    """Run the intent-parse → search/modify → response pipeline.
 
-    @post("/process-audio")
-    async def process_audio(
-        self,
-        data: AudioRequest,
-        db: AsyncSession,
-    ) -> AudioResponse:
-        """
-        Process audio and return matching menu items.
-
-        1. Transcribe audio
-        2. Parse intent with LLM
-        3. Based on intent, search/modify results
-        4. Return menu items + basket
-        """
+    Shared by the REST endpoint and the WebSocket handler.
+    """
+    if timer is None:
         timer = PipelineTimer()
-        session = get_or_create_session(data.session_id)
-        session.language = data.language
 
-        # Transcribe audio
-        audio_bytes = base64.b64decode(data.audio_base64)
-        transcript = await transcribe_audio(audio_bytes, session.language)
-        timer.mark("STT")
-
-        if not transcript:
-            timer.log()
-            basket_items_db = await get_items_by_ids(db, session.basket_item_ids)
-            return AudioResponse(
-                transcript="",
-                message="No speech was recognized in the recording",
-                session_id=session.session_id,
-                basket_items=_basket_responses(basket_items_db, session),
-            )
-
-        # Fetch current item names for LLM context
-        displayed_names = await get_item_names_by_ids(db, session.displayed_item_ids)
-        basket_names = await get_item_names_by_ids(db, session.basket_item_ids)
-
-        # Parse intent
-        intent_result = await parse_intent(
-            transcript, session.conversation_history, displayed_names, basket_names
+    if not transcript:
+        basket_items_db = await get_items_by_ids(db, session.basket_item_ids)
+        timer.log()
+        return AudioResponse(
+            transcript="",
+            message="No speech was recognized in the recording",
+            session_id=session.session_id,
+            basket_items=_basket_responses(basket_items_db, session),
         )
-        intent = intent_result.get("intent")
-        timer.mark("LLM")
-        msg = ""
 
-        if intent == "CLEAR":
-            timer.log()
-            session.clear()
-            return AudioResponse(
-                transcript=transcript,
-                message="Order cleared. Start fresh!",
-                session_id=session.session_id,
-            )
+    # Fetch current item names for LLM context
+    displayed_names = await get_item_names_by_ids(db, session.displayed_item_ids)
+    basket_names = await get_item_names_by_ids(db, session.basket_item_ids)
 
-        elif intent == "REMOVE":
-            remove_names = intent_result.get("remove_items", [])
-            removed_ids = await get_item_ids_by_names(db, remove_names)
+    # Parse intent
+    intent_result = await parse_intent(
+        transcript, session.conversation_history, displayed_names, basket_names
+    )
+    intent = intent_result.get("intent")
+    timer.mark("LLM")
+    msg = ""
+
+    if intent == "CLEAR":
+        session.clear()
+        timer.log()
+        return AudioResponse(
+            transcript=transcript,
+            message="Order cleared. Start fresh!",
+            session_id=session.session_id,
+        )
+
+    elif intent == "REMOVE":
+        remove_names = intent_result.get("remove_items", [])
+        removed_ids = await get_item_ids_by_names(db, remove_names)
+        session.displayed_item_ids = [
+            id for id in session.displayed_item_ids
+            if id not in removed_ids
+        ]
+        timer.mark("DB Remove")
+
+    elif intent == "ADD":
+        new_search = intent_result.get("new_search", True)
+        search_criteria = intent_result.get("search_criteria")
+        session.add_utterance(transcript, "ADD", new_search=new_search, search_criteria=search_criteria)
+        exclude_ids = list(set(session.displayed_item_ids + session.basket_item_ids))
+        if new_search:
+            exclude_ids = session.basket_item_ids
+
+        query_embedding = create_query_embedding(session.accumulated_criteria)
+        timer.mark("Embedding")
+
+        items = await search_menu_items(db, query_embedding, exclude_ids)
+        timer.mark("DB Search")
+
+        items = rerank_items(session.accumulated_criteria, items)
+        timer.mark("Rerank")
+
+        session.displayed_item_ids = [item.id for item in items]
+
+    elif intent == "SELECT":
+        select_names = intent_result.get("select_items", [])
+        selected_ids = await get_item_ids_by_names_from_set(
+            db, select_names, session.displayed_item_ids
+        )
+        if selected_ids:
+            session.add_to_basket(selected_ids)
             session.displayed_item_ids = [
                 id for id in session.displayed_item_ids
-                if id not in removed_ids
+                if id not in selected_ids
             ]
-            timer.mark("DB Remove")
-
-        elif intent == "ADD":
-            new_search = intent_result.get("new_search", True)
-            search_criteria = intent_result.get("search_criteria")
-            session.add_utterance(transcript, "ADD", new_search=new_search, search_criteria=search_criteria)
-            # Exclude basket items so they don't reappear in search results
-            exclude_ids = list(set(session.displayed_item_ids + session.basket_item_ids))
-            if new_search:
-                # Fresh search — only exclude basket items
-                exclude_ids = session.basket_item_ids
+            msg = f"Added {len(selected_ids)} item(s) to your order"
+            timer.mark("DB Select")
+        else:
+            search_text = " ".join(select_names)
+            session.add_utterance(transcript, "ADD", new_search=True, search_criteria=search_text)
+            exclude_ids = session.basket_item_ids
 
             query_embedding = create_query_embedding(session.accumulated_criteria)
             timer.mark("Embedding")
@@ -148,60 +161,51 @@ class AudioController(Controller):
 
             session.displayed_item_ids = [item.id for item in items]
 
-        elif intent == "SELECT":
-            select_names = intent_result.get("select_items", [])
-            selected_ids = await get_item_ids_by_names_from_set(
-                db, select_names, session.displayed_item_ids
-            )
-            if selected_ids:
-                session.add_to_basket(selected_ids)
-                session.displayed_item_ids = [
-                    id for id in session.displayed_item_ids
-                    if id not in selected_ids
-                ]
-                msg = f"Added {len(selected_ids)} item(s) to your order"
-                timer.mark("DB Select")
-            else:
-                # Item not displayed — fall back to ADD search
-                search_text = " ".join(select_names)
-                session.add_utterance(transcript, "ADD", new_search=True, search_criteria=search_text)
-                exclude_ids = session.basket_item_ids
+    elif intent == "REMOVE_FROM_BASKET":
+        basket_remove_names = intent_result.get("basket_remove_items", [])
+        removed_ids = await get_item_ids_by_names(db, basket_remove_names)
+        session.remove_from_basket(removed_ids)
+        msg = "Removed item(s) from your order"
+        timer.mark("DB Basket Remove")
 
-                query_embedding = create_query_embedding(session.accumulated_criteria)
-                timer.mark("Embedding")
+    elif intent == "CONFIRM":
+        msg = "Order confirmed! Thank you!"
 
-                items = await search_menu_items(db, query_embedding, exclude_ids)
-                timer.mark("DB Search")
+    # Fetch current search results and basket
+    items = await get_items_by_ids(db, session.displayed_item_ids)
+    basket_items_db = await get_items_by_ids(db, session.basket_item_ids)
+    timer.mark("DB Fetch")
 
-                items = rerank_items(session.accumulated_criteria, items)
-                timer.mark("Rerank")
+    timer.log()
 
-                session.displayed_item_ids = [item.id for item in items]
+    return AudioResponse(
+        items=[menu_item_to_response(item) for item in items],
+        basket_items=_basket_responses(basket_items_db, session),
+        transcript=transcript,
+        session_id=session.session_id,
+        message=msg,
+    )
 
-        elif intent == "REMOVE_FROM_BASKET":
-            basket_remove_names = intent_result.get("basket_remove_items", [])
-            removed_ids = await get_item_ids_by_names(db, basket_remove_names)
-            session.remove_from_basket(removed_ids)
-            msg = "Removed item(s) from your order"
-            timer.mark("DB Basket Remove")
 
-        elif intent == "CONFIRM":
-            msg = "Order confirmed! Thank you!"
+class AudioController(Controller):
+    path = "/api"
+    dependencies = {"db": Provide(get_db_session)}
 
-        # Fetch current search results and basket
-        items = await get_items_by_ids(db, session.displayed_item_ids)
-        basket_items_db = await get_items_by_ids(db, session.basket_item_ids)
-        timer.mark("DB Fetch")
+    @post("/process-audio")
+    async def process_audio(
+        self,
+        data: AudioRequest,
+        db: AsyncSession,
+    ) -> AudioResponse:
+        timer = PipelineTimer()
+        session = get_or_create_session(data.session_id)
+        session.language = data.language
 
-        timer.log()
+        audio_bytes = base64.b64decode(data.audio_base64)
+        transcript = await transcribe_audio(audio_bytes, session.language)
+        timer.mark("STT")
 
-        return AudioResponse(
-            items=[menu_item_to_response(item) for item in items],
-            basket_items=_basket_responses(basket_items_db, session),
-            transcript=transcript,
-            session_id=session.session_id,
-            message=msg,
-        )
+        return await run_pipeline(session, transcript, db, timer)
 
     @post("/basket/add")
     async def add_to_basket(

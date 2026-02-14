@@ -8,6 +8,8 @@ export function useSession() {
   const menuItems = ref([])
   const basketItems = ref([])
   const isProcessing = ref(false)
+  const interimTranscript = ref('')
+  const isOrdering = ref(false)
 
   const supportedLanguages = [
     { code: 'en-US', label: 'English', flag: '\u{1f1ec}\u{1f1e7}' },
@@ -62,6 +64,8 @@ export function useSession() {
     basketItems,
     basketTotal,
     isProcessing,
+    interimTranscript,
+    isOrdering,
     supportedLanguages,
     updateFromResponse,
     updateBasketFromResponse,

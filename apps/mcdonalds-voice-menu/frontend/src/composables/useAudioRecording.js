@@ -5,9 +5,17 @@ export function useAudioRecording() {
   const audioBlob = ref(null)
   const error = ref(null)
 
+  const isStreaming = ref(false)
+
   let mediaRecorder = null
   let audioChunks = []
   let stream = null
+
+  // Streaming mode state
+  let streamingContext = null
+  let streamingSource = null
+  let workletNode = null
+  let streamingStream = null
 
   function getSupportedMimeType() {
     const types = [
@@ -145,15 +153,75 @@ export function useAudioRecording() {
     }
   }
 
+  async function startStreaming(onChunk) {
+    try {
+      error.value = null
+      streamingStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      })
+
+      streamingContext = new AudioContext()
+
+      // Resume if suspended (Safari)
+      if (streamingContext.state === 'suspended') {
+        await streamingContext.resume()
+      }
+
+      await streamingContext.audioWorklet.addModule('/pcm-processor.js')
+
+      streamingSource = streamingContext.createMediaStreamSource(streamingStream)
+      workletNode = new AudioWorkletNode(streamingContext, 'pcm-processor')
+
+      workletNode.port.onmessage = (event) => {
+        // event.data is an ArrayBuffer of Int16 PCM
+        onChunk(event.data)
+      }
+
+      streamingSource.connect(workletNode)
+      workletNode.connect(streamingContext.destination)
+      isStreaming.value = true
+    } catch (err) {
+      error.value = err.message
+      console.error('Failed to start streaming:', err)
+    }
+  }
+
+  async function stopStreaming() {
+    if (workletNode) {
+      workletNode.disconnect()
+      workletNode = null
+    }
+    if (streamingSource) {
+      streamingSource.disconnect()
+      streamingSource = null
+    }
+    if (streamingStream) {
+      streamingStream.getTracks().forEach((track) => track.stop())
+      streamingStream = null
+    }
+    if (streamingContext) {
+      await streamingContext.close()
+      streamingContext = null
+    }
+    isStreaming.value = false
+  }
+
   onUnmounted(() => {
     stopRecording()
+    stopStreaming()
   })
 
   return {
     isRecording,
+    isStreaming,
     audioBlob,
     error,
     startRecording,
     stopRecording,
+    startStreaming,
+    stopStreaming,
   }
 }
