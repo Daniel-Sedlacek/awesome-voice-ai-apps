@@ -1,24 +1,38 @@
+import logging
+
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.models import MenuItem
+
+logger = logging.getLogger(__name__)
+
+MAX_RESULTS = 20
+COSINE_DISTANCE_THRESHOLD = 0.8
 
 
 async def search_menu_items(
     session: AsyncSession,
     query_embedding: list[float],
     exclude_ids: list[int] | None = None,
-    top_k: int = 5,
 ) -> list[MenuItem]:
-    """Search menu items by pre-computed embedding using vector similarity."""
+    """Search menu items by embedding similarity, filtered by cosine distance threshold."""
+    distance = MenuItem.embedding.cosine_distance(query_embedding)
     select_query = (
-        select(MenuItem)
-        .order_by(MenuItem.embedding.cosine_distance(query_embedding))
+        select(MenuItem, distance.label("cosine_distance"))
+        .where(distance <= COSINE_DISTANCE_THRESHOLD)
+        .order_by(distance)
     )
     if exclude_ids:
         select_query = select_query.where(MenuItem.id.notin_(exclude_ids))
-    select_query = select_query.limit(top_k)
+    select_query = select_query.limit(MAX_RESULTS)
     result = await session.execute(select_query)
-    return result.scalars().all()
+    rows = result.all()
+    items = []
+    for item, cosine_dist in rows:
+        similarity = 1 - cosine_dist
+        logger.info("Menu match: '%s' (similarity: %.4f)", item.name, similarity)
+        items.append(item)
+    return items
 
 
 async def get_items_by_ids(
