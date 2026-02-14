@@ -21,7 +21,10 @@ async def seed_database():
     print(f"Creating embeddings for {len(items)} menu items...")
 
     # Create embeddings for all items (batch for efficiency)
-    text_for_embeddings = [f"{item['name']}: {item['description']}" for item in items]
+    text_for_embeddings = [
+        f"{item['name']}: {item['description']} ({', '.join(item['tags'])})"
+        for item in items
+    ]
     embeddings = create_batch_document_embeddings(text_for_embeddings)
 
     async with async_session() as session:
