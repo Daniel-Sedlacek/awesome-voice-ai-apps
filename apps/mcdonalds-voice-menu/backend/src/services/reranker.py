@@ -23,7 +23,6 @@ def rerank_items(query: str, items: list[MenuItem]) -> list[MenuItem]:
     if not items:
         return []
 
-    settings = get_settings()
     model = get_reranker_model()
 
     pairs = []

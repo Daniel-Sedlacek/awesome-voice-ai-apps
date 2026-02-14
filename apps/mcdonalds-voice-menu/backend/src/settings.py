@@ -27,7 +27,6 @@ class Settings(BaseSettings):
 
     # Reranker model
     RERANKER_MODEL_NAME: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    RERANKER_SCORE_THRESHOLD: float = -8.0
 
 
 def get_settings() -> Settings:
