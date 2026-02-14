@@ -14,7 +14,7 @@ from src.schemas import (
     menu_item_to_response,
 )
 from src.session import UserSession, get_or_create_session
-from src.services.azure_speech import transcribe_audio
+from src.services.stt import transcribe_audio
 from src.services.azure_openai import parse_intent
 from src.services.embeddings import create_query_embedding
 from src.services.retrieval import (
@@ -129,7 +129,8 @@ class AudioController(Controller):
 
         elif intent == "ADD":
             new_search = intent_result.get("new_search", True)
-            session.add_utterance(transcript, "ADD", new_search=new_search)
+            search_criteria = intent_result.get("search_criteria")
+            session.add_utterance(transcript, "ADD", new_search=new_search, search_criteria=search_criteria)
             # Exclude basket items so they don't reappear in search results
             exclude_ids = list(set(session.displayed_item_ids + session.basket_item_ids))
             if new_search:
@@ -149,12 +150,9 @@ class AudioController(Controller):
 
         elif intent == "SELECT":
             select_names = intent_result.get("select_items", [])
-            # First try displayed items, then fall back to full menu
             selected_ids = await get_item_ids_by_names_from_set(
                 db, select_names, session.displayed_item_ids
             )
-            if not selected_ids:
-                selected_ids = await get_item_ids_by_names(db, select_names)
             if selected_ids:
                 session.add_to_basket(selected_ids)
                 session.displayed_item_ids = [
@@ -162,9 +160,23 @@ class AudioController(Controller):
                     if id not in selected_ids
                 ]
                 msg = f"Added {len(selected_ids)} item(s) to your order"
+                timer.mark("DB Select")
             else:
-                msg = "Could not find those items in the menu"
-            timer.mark("DB Select")
+                # Item not displayed — fall back to ADD search
+                search_text = " ".join(select_names)
+                session.add_utterance(transcript, "ADD", new_search=True, search_criteria=search_text)
+                exclude_ids = session.basket_item_ids
+
+                query_embedding = create_query_embedding(session.accumulated_criteria)
+                timer.mark("Embedding")
+
+                items = await search_menu_items(db, query_embedding, exclude_ids)
+                timer.mark("DB Search")
+
+                items = rerank_items(session.accumulated_criteria, items)
+                timer.mark("Rerank")
+
+                session.displayed_item_ids = [item.id for item in items]
 
         elif intent == "REMOVE_FROM_BASKET":
             basket_remove_names = intent_result.get("basket_remove_items", [])

@@ -41,23 +41,24 @@ Before each user message, you will see:
 - [Basket Items]: The items already in the user's order. If the user wants to remove one of these, use REMOVE_FROM_BASKET.
 
 ## Key Distinction
-- ADD vs SELECT: ADD means the user is searching/browsing ("show me burgers", "I want something spicy"). SELECT means the user has decided on a specific item — especially if the item is in the displayed items list ("I'll take the Big Mac", "add the McFlurry to my order", "yes, the cheeseburger please", "I want a Sprite" when Sprite is displayed). When the user names a specific item that is currently displayed, ALWAYS use SELECT.
+- ADD vs SELECT: SELECT is ONLY for items that are currently in [Displayed Items]. If the user names a specific item that IS displayed, use SELECT. If the item is NOT displayed (or [Displayed Items] is None/empty), ALWAYS use ADD — even if the user names a specific item. ADD searches the menu; SELECT picks from what's already shown.
 - REMOVE vs REMOVE_FROM_BASKET: REMOVE removes from search results ("don't show me the salad"). REMOVE_FROM_BASKET removes from the user's order ("remove the Big Mac from my order", "take the fries off my order").
 - new_search (for ADD only): Set to true when the user is asking about a completely different category or topic (e.g. switching from burgers to drinks). Set to false when the user is refining or narrowing their current search (e.g. "with cheese" after asking for burgers). When in doubt, set to true.
 
-## Examples
-User: "I want a burger" → {"intent": "ADD", "search_criteria": "burger", "new_search": true}
+## Examples (note: Displayed Items context determines ADD vs SELECT)
+User: "I want a burger" (Displayed Items: None) → {"intent": "ADD", "search_criteria": "burger", "new_search": true}
+User: "A cheeseburger" (Displayed Items: None) → {"intent": "ADD", "search_criteria": "cheeseburger", "new_search": true}
+User: "I would like some burger" (Displayed Items: None) → {"intent": "ADD", "search_criteria": "burger", "new_search": true}
 User: "With two patties" → {"intent": "ADD", "search_criteria": "two patties burger", "new_search": false}
 User: "Show me something to drink" → {"intent": "ADD", "search_criteria": "drinks beverages", "new_search": true}
 User: "Something cold" (after drinks) → {"intent": "ADD", "search_criteria": "cold drinks", "new_search": false}
 User: "Show me something healthy" → {"intent": "ADD", "search_criteria": "healthy low calorie", "new_search": true}
 User: "Actually remove the Big Mac" → {"intent": "REMOVE", "remove_items": ["Big Mac"]}
-User: "I'll take the Big Mac" → {"intent": "SELECT", "select_items": ["Big Mac"]}
-User: "Add the McFlurry and the fries to my order" → {"intent": "SELECT", "select_items": ["McFlurry", "French Fries"]}
-User: "Yes, the cheeseburger please" → {"intent": "SELECT", "select_items": ["Cheeseburger"]}
-User: "I would buy a cheeseburger" → {"intent": "SELECT", "select_items": ["Cheeseburger"]}
-User: "One more cheeseburger please" → {"intent": "SELECT", "select_items": ["Cheeseburger"]}
-User: "Another Big Mac" → {"intent": "SELECT", "select_items": ["Big Mac"]}
+User: "I'll take the Big Mac" (Displayed Items: Big Mac, McChicken, Quarter Pounder) → {"intent": "SELECT", "select_items": ["Big Mac"]}
+User: "Add the McFlurry and the fries to my order" (Displayed Items: McFlurry, French Fries, Apple Pie) → {"intent": "SELECT", "select_items": ["McFlurry", "French Fries"]}
+User: "Yes, the cheeseburger please" (Displayed Items: Cheeseburger, Hamburger) → {"intent": "SELECT", "select_items": ["Cheeseburger"]}
+User: "One more cheeseburger please" (Displayed Items: None, Basket: Cheeseburger) → {"intent": "ADD", "search_criteria": "cheeseburger", "new_search": true}
+User: "Another Big Mac" (Displayed Items: Big Mac) → {"intent": "SELECT", "select_items": ["Big Mac"]}
 User: "Remove the Big Mac from my order" → {"intent": "REMOVE_FROM_BASKET", "basket_remove_items": ["Big Mac"]}
 User: "I don't want the fries anymore" → {"intent": "REMOVE_FROM_BASKET", "basket_remove_items": ["French Fries"]}
 User: "Take the McChicken off my order" → {"intent": "REMOVE_FROM_BASKET", "basket_remove_items": ["McChicken"]}

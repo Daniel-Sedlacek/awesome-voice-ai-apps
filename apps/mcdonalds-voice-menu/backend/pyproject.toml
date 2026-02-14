@@ -18,4 +18,5 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.46",
     "torch>=2.10.0",
     "uvicorn>=0.40.0",
+    "deepgram-sdk>=4.0.0",
 ]

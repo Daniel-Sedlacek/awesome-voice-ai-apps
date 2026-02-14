@@ -15,7 +15,7 @@ class UserSession:
     basket_quantities: dict[int, int] = field(default_factory=dict)
     created_at: datetime = field(default_factory=lambda: datetime.now(ZoneInfo("UTC")))
 
-    def add_utterance(self, text: str, intent: str, new_search: bool = False):
+    def add_utterance(self, text: str, intent: str, new_search: bool = False, search_criteria: str | None = None):
         """Add a user utterance to the conversation history."""
         self.conversation_history.append({
             "text": text,
@@ -23,11 +23,12 @@ class UserSession:
             "timestamp": datetime.now(ZoneInfo("UTC")).isoformat()
         })
         if intent == "ADD":
+            criteria = search_criteria or text
             if new_search:
-                self.accumulated_criteria = text
+                self.accumulated_criteria = criteria
                 self.displayed_item_ids = []
             else:
-                self.accumulated_criteria = f"{self.accumulated_criteria} {text}".strip()
+                self.accumulated_criteria = f"{self.accumulated_criteria} {criteria}".strip()
 
     def add_to_basket(self, item_ids: list[int]):
         """Add items to basket, incrementing quantity if already present."""
