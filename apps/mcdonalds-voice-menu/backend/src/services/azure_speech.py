@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 import azure.cognitiveservices.speech as speechsdk
-from src.config import get_settings
+from src.settings import get_settings
 
 _LANGUAGE_NAME_FIELDS = {
     "en-US": "name",

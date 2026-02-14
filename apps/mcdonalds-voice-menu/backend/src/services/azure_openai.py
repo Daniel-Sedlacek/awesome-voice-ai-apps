@@ -1,6 +1,6 @@
 import json
 from openai import OpenAI
-from src.config import get_settings
+from src.settings import get_settings
 
 
 def get_openai_client() -> OpenAI:
