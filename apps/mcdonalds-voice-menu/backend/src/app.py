@@ -7,15 +7,19 @@ from litestar.static_files import StaticFilesConfig
 from src.routes.audio import AudioController
 from src.routes.menu import MenuController
 from src.services.embeddings import get_embedding_model
+from src.services.reranker import get_reranker_model
 
 logger = logging.getLogger(__name__)
 
 
-async def preload_embedding_model() -> None:
-    """Pre-download and load the embedding model at server startup."""
+async def preload_models() -> None:
+    """Pre-download and load the embedding and reranker models at server startup."""
     logger.info("Loading embedding model...")
     get_embedding_model()
     logger.info("Embedding model loaded.")
+    logger.info("Loading reranker model...")
+    get_reranker_model()
+    logger.info("Reranker model loaded.")
 
 
 # CORS configuration for frontend
@@ -34,6 +38,6 @@ app = Litestar(
             path="/static",
         )
     ],
-    on_startup=[preload_embedding_model],
+    on_startup=[preload_models],
     debug=True,
 )

@@ -24,6 +24,7 @@ from src.services.retrieval import (
     get_item_ids_by_names_from_set,
     get_item_names_by_ids,
 )
+from src.services.reranker import rerank_items
 
 
 class PipelineTimer:
@@ -140,6 +141,9 @@ class AudioController(Controller):
 
             items = await search_menu_items(db, query_embedding, exclude_ids)
             timer.mark("DB Search")
+
+            items = rerank_items(session.accumulated_criteria, items)
+            timer.mark("Rerank")
 
             session.displayed_item_ids = [item.id for item in items]
 
