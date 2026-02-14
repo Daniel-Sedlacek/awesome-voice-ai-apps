@@ -44,5 +44,5 @@ def rerank_items(query: str, items: list[MenuItem]) -> list[MenuItem]:
         if float(score) >= RERANKER_SCORE_THRESHOLD
     ]
 
-    logger.info("Reranker kept %d/%d items (threshold=%.2f)", len(filtered), len(items), RERANKER_SCORE_THRESHOLD)
+    logger.info(f"Reranker kept {len(filtered)}/{len(items)} items (threshold={RERANKER_SCORE_THRESHOLD})")
     return filtered
