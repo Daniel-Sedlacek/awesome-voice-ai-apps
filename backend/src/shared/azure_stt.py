@@ -18,13 +18,18 @@ class AzureServiceError(Exception):
     pass
 
 
-def transcribe_audio(audio_data: bytes, locale: str = "en-US") -> str:
+def transcribe_audio(
+    audio_data: bytes,
+    locale: str = "en-US",
+    phrase_hints: list[str] | None = None,
+) -> str:
     """
     Transcribe audio data using Azure Speech-to-Text (one-shot recognition).
 
     Args:
         audio_data: Audio data in WAV format (16kHz, 16-bit, mono)
         locale: Language locale code (e.g., "en-US")
+        phrase_hints: Optional list of phrases to bias recognition toward
 
     Returns:
         Transcribed text
@@ -48,6 +53,11 @@ def transcribe_audio(audio_data: bytes, locale: str = "en-US") -> str:
         recognizer = speechsdk.SpeechRecognizer(
             speech_config=speech_config, audio_config=audio_config
         )
+
+        if phrase_hints:
+            phrase_list = speechsdk.PhraseListGrammar.from_recognizer(recognizer)
+            for phrase in phrase_hints:
+                phrase_list.addPhrase(phrase)
 
         if audio_data[:4] == b'RIFF':
             with wave.open(io.BytesIO(audio_data), 'rb') as wav_file:
@@ -74,7 +84,11 @@ def transcribe_audio(audio_data: bytes, locale: str = "en-US") -> str:
         raise AzureServiceError(f"Speech-to-Text error: {str(e)}")
 
 
-def transcribe_audio_continuous(audio_data: bytes, locale: str = "en-US") -> str:
+def transcribe_audio_continuous(
+    audio_data: bytes,
+    locale: str = "en-US",
+    phrase_hints: list[str] | None = None,
+) -> str:
     """
     Transcribe longer audio using continuous recognition.
     Better for recordings longer than 15 seconds.
@@ -82,6 +96,7 @@ def transcribe_audio_continuous(audio_data: bytes, locale: str = "en-US") -> str
     Args:
         audio_data: Audio data in WAV format (16kHz, 16-bit, mono)
         locale: Language locale code
+        phrase_hints: Optional list of phrases to bias recognition toward
 
     Returns:
         Transcribed text (concatenated from all recognized segments)
@@ -105,6 +120,11 @@ def transcribe_audio_continuous(audio_data: bytes, locale: str = "en-US") -> str
         recognizer = speechsdk.SpeechRecognizer(
             speech_config=speech_config, audio_config=audio_config
         )
+
+        if phrase_hints:
+            phrase_list = speechsdk.PhraseListGrammar.from_recognizer(recognizer)
+            for phrase in phrase_hints:
+                phrase_list.addPhrase(phrase)
 
         results: list[str] = []
         done = False
