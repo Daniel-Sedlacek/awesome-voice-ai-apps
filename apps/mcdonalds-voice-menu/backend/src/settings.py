@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     RERANKER_MODEL_NAME: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
     # STT provider
-    STT_PROVIDER: str = "deepgram"  # "azure" or "deepgram"
+    STT_PROVIDER: str = "azure"  # "azure" or "deepgram"
     DEEPGRAM_API_KEY: str
 
 

@@ -30,14 +30,15 @@ class UserSession:
             else:
                 self.accumulated_criteria = f"{self.accumulated_criteria} {criteria}".strip()
 
-    def add_to_basket(self, item_ids: list[int]):
-        """Add items to basket, incrementing quantity if already present."""
+    def add_to_basket(self, item_ids: list[int], quantities: dict[int, int] | None = None):
+        """Add items to basket with specified quantities, incrementing if already present."""
         for item_id in item_ids:
+            qty = quantities.get(item_id, 1) if quantities else 1
             if item_id not in self.basket_item_ids:
                 self.basket_item_ids.append(item_id)
-                self.basket_quantities[item_id] = 1
+                self.basket_quantities[item_id] = qty
             else:
-                self.basket_quantities[item_id] = self.basket_quantities.get(item_id, 1) + 1
+                self.basket_quantities[item_id] = self.basket_quantities.get(item_id, 0) + qty
 
     def remove_from_basket(self, item_ids: list[int]):
         """Remove items from basket (removes entirely regardless of quantity)."""

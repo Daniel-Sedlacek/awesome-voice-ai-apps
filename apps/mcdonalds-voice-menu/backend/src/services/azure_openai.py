@@ -32,6 +32,7 @@ Analyze the user's speech and determine their intent.
   "new_search": true/false (only for ADD - true if this is a new topic, false if refining the previous search),
   "remove_items": ["item names to remove from search results (only for REMOVE)"],
   "select_items": ["item names to add to basket (only for SELECT)"],
+  "select_quantities": {"item name": quantity} (only for SELECT, when user specifies a quantity like "two Big Macs". Omit items with quantity 1),
   "basket_remove_items": ["item names to remove from basket (only for REMOVE_FROM_BASKET)"]
 }
 
@@ -55,7 +56,9 @@ User: "Something cold" (after drinks) → {"intent": "ADD", "search_criteria": "
 User: "Show me something healthy" → {"intent": "ADD", "search_criteria": "healthy low calorie", "new_search": true}
 User: "Actually remove the Big Mac" → {"intent": "REMOVE", "remove_items": ["Big Mac"]}
 User: "I'll take the Big Mac" (Displayed Items: Big Mac, McChicken, Quarter Pounder) → {"intent": "SELECT", "select_items": ["Big Mac"]}
+User: "I'll take two Big Macs" (Displayed Items: Big Mac, McChicken, Quarter Pounder) → {"intent": "SELECT", "select_items": ["Big Mac"], "select_quantities": {"Big Mac": 2}}
 User: "Add the McFlurry and the fries to my order" (Displayed Items: McFlurry, French Fries, Apple Pie) → {"intent": "SELECT", "select_items": ["McFlurry", "French Fries"]}
+User: "Three cheeseburgers and two McFlurries please" (Displayed Items: Cheeseburger, McFlurry) → {"intent": "SELECT", "select_items": ["Cheeseburger", "McFlurry"], "select_quantities": {"Cheeseburger": 3, "McFlurry": 2}}
 User: "Yes, the cheeseburger please" (Displayed Items: Cheeseburger, Hamburger) → {"intent": "SELECT", "select_items": ["Cheeseburger"]}
 User: "One more cheeseburger please" (Displayed Items: None, Basket: Cheeseburger) → {"intent": "ADD", "search_criteria": "cheeseburger", "new_search": true}
 User: "Another Big Mac" (Displayed Items: Big Mac) → {"intent": "SELECT", "select_items": ["Big Mac"]}

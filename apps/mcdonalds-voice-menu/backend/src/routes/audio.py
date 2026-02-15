@@ -60,6 +60,26 @@ def _basket_responses(items_db, session: UserSession):
     ]
 
 
+async def _map_names_to_ids(
+    db: AsyncSession, names, candidate_ids: list[int]
+) -> dict[str, int]:
+    """Map item names (from LLM) to their IDs, case-insensitive."""
+    from sqlalchemy import select, func
+    from src.models import MenuItem
+
+    if not names or not candidate_ids:
+        return {}
+    name_list = list(names)
+    query = select(MenuItem.id, MenuItem.name).where(
+        func.lower(MenuItem.name).in_([n.lower() for n in name_list]),
+        MenuItem.id.in_(candidate_ids),
+    )
+    result = await db.execute(query)
+    # Build a lowercase DB name → id map, then match against LLM names
+    db_lower_map = {row.name.lower(): row.id for row in result.all()}
+    return {name: db_lower_map[name.lower()] for name in name_list if name.lower() in db_lower_map}
+
+
 async def run_pipeline(
     session: UserSession,
     transcript: str,
@@ -134,16 +154,26 @@ async def run_pipeline(
 
     elif intent == "SELECT":
         select_names = intent_result.get("select_items", [])
+        select_quantities_by_name = intent_result.get("select_quantities", {})
         selected_ids = await get_item_ids_by_names_from_set(
             db, select_names, session.displayed_item_ids
         )
         if selected_ids:
-            session.add_to_basket(selected_ids)
+            # Map name-based quantities to ID-based quantities
+            quantities_by_id: dict[int, int] = {}
+            if select_quantities_by_name:
+                name_to_id = await _map_names_to_ids(db, select_quantities_by_name.keys(), selected_ids)
+                for name, qty in select_quantities_by_name.items():
+                    item_id = name_to_id.get(name)
+                    if item_id:
+                        quantities_by_id[item_id] = qty
+            session.add_to_basket(selected_ids, quantities_by_id or None)
             session.displayed_item_ids = [
                 id for id in session.displayed_item_ids
                 if id not in selected_ids
             ]
-            msg = f"Added {len(selected_ids)} item(s) to your order"
+            total_qty = sum(quantities_by_id.get(id, 1) for id in selected_ids)
+            msg = f"Added {total_qty} item(s) to your order"
             timer.mark("DB Select")
         else:
             search_text = " ".join(select_names)
