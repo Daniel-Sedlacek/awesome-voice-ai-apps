@@ -1,11 +1,10 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { useAudioRecording } from '@/shared/composables/useAudioRecording'
 import { useTranslation } from './composables/useTranslation'
 import LanguageSelector from '@/shared/components/LanguageSelector.vue'
 import AudioRecorder from '@/shared/components/AudioRecorder.vue'
 import TranslationResult from './components/TranslationResult.vue'
-import AudioPlayback from './components/AudioPlayback.vue'
 
 const languages = [
   { code: 'en-US', label: 'English (US)', flag: '\u{1f1fa}\u{1f1f8}' },
@@ -42,18 +41,22 @@ watch(audioBlob, async (blob) => {
   reader.readAsDataURL(blob)
 })
 
-const audioSegments = ref([])
-watch(result, (r) => {
-  if (!r) {
-    audioSegments.value = []
-    return
-  }
-  audioSegments.value = [
-    { label: 'Original', audioBase64: r.original.audio_base64 },
-    { label: 'Translation 1', audioBase64: r.translation_1.audio_base64 },
-    { label: 'Translation 2', audioBase64: r.translation_2.audio_base64 },
-  ]
+const autoPlayIndex = ref(-1)
+
+watch(result, async (r) => {
+  if (!r) return
+  autoPlayIndex.value = -1
+  await nextTick()
+  autoPlayIndex.value = 0
 })
+
+function onSegmentPlayed(index) {
+  if (index < 2) {
+    autoPlayIndex.value = index + 1
+  } else {
+    autoPlayIndex.value = -1
+  }
+}
 </script>
 
 <template>
@@ -117,21 +120,26 @@ watch(result, (r) => {
           label="Original"
           :text="result.original.text"
           :locale="result.original.locale"
+          :audio-base64="result.original.audio_base64"
+          :auto-play="autoPlayIndex === 0"
+          @played="onSegmentPlayed(0)"
         />
         <TranslationResult
           label="Translation 1"
           :text="result.translation_1.text"
           :locale="result.translation_1.locale"
+          :audio-base64="result.translation_1.audio_base64"
+          :auto-play="autoPlayIndex === 1"
+          @played="onSegmentPlayed(1)"
         />
         <TranslationResult
           label="Translation 2"
           :text="result.translation_2.text"
           :locale="result.translation_2.locale"
+          :audio-base64="result.translation_2.audio_base64"
+          :auto-play="autoPlayIndex === 2"
+          @played="onSegmentPlayed(2)"
         />
-
-        <div class="flex justify-center pt-2">
-          <AudioPlayback :audio-segments="audioSegments" />
-        </div>
       </div>
     </div>
   </div>
