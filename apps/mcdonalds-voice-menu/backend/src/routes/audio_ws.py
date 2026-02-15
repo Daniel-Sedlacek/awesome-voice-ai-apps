@@ -79,7 +79,6 @@ class AudioWSListener(WebsocketListener):
             try:
                 await socket.send_json({"type": "processing", "text": text})
                 timer = PipelineTimer()
-                timer.mark("STT")
                 async with async_session() as db:
                     response = await run_pipeline(conn.session, text, db, timer)
                 result = msgspec.to_builtins(response)
