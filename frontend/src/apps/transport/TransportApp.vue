@@ -2,7 +2,6 @@
 import { ref, watch, nextTick } from 'vue'
 import { useAudioRecording } from '@/shared/composables/useAudioRecording'
 import { useTranslation } from './composables/useTranslation'
-import LanguageSelector from '@/shared/components/LanguageSelector.vue'
 import AudioRecorder from '@/shared/components/AudioRecorder.vue'
 import TranslationResult from './components/TranslationResult.vue'
 
@@ -68,30 +67,41 @@ function onSegmentPlayed(index) {
 
     <div class="max-w-2xl mx-auto px-4 pb-12 space-y-8">
       <!-- Language selectors -->
-      <div class="space-y-4">
+      <div class="space-y-3">
         <div>
-          <label class="text-transport-light text-sm font-semibold mb-2 block">Source Language</label>
-          <LanguageSelector
+          <label class="text-transport-light text-xs font-semibold uppercase tracking-wider mb-1.5 block">Source Language</label>
+          <select
             v-model="sourceLocale"
-            :languages="languages"
-            active-class="bg-transport-light text-transport-blue shadow-md scale-105"
-          />
+            class="w-full px-4 py-3 rounded-xl bg-white/20 text-white text-base font-semibold border-2 border-transport-light/40 shadow-lg shadow-transport-light/10 backdrop-blur-sm appearance-none cursor-pointer focus:outline-none focus:border-transport-light focus:ring-2 focus:ring-transport-light/30 transition-all"
+          >
+            <option v-for="lang in languages" :key="lang.code" :value="lang.code" class="text-gray-900">
+              {{ lang.flag }} {{ lang.label }}
+            </option>
+          </select>
         </div>
-        <div>
-          <label class="text-transport-light text-sm font-semibold mb-2 block">Target Language 1</label>
-          <LanguageSelector
-            v-model="targetLocale1"
-            :languages="languages"
-            active-class="bg-transport-light text-transport-blue shadow-md scale-105"
-          />
-        </div>
-        <div>
-          <label class="text-transport-light text-sm font-semibold mb-2 block">Target Language 2</label>
-          <LanguageSelector
-            v-model="targetLocale2"
-            :languages="languages"
-            active-class="bg-transport-light text-transport-blue shadow-md scale-105"
-          />
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-white/70 text-xs font-medium uppercase tracking-wider mb-1.5 block">Target 1</label>
+            <select
+              v-model="targetLocale1"
+              class="w-full px-3 py-2.5 rounded-lg bg-white/10 text-white/90 text-sm border border-white/20 backdrop-blur-sm appearance-none cursor-pointer focus:outline-none focus:border-transport-light/60 focus:ring-2 focus:ring-transport-light/20 transition-all"
+            >
+              <option v-for="lang in languages" :key="lang.code" :value="lang.code" class="text-gray-900">
+                {{ lang.flag }} {{ lang.label }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="text-white/70 text-xs font-medium uppercase tracking-wider mb-1.5 block">Target 2</label>
+            <select
+              v-model="targetLocale2"
+              class="w-full px-3 py-2.5 rounded-lg bg-white/10 text-white/90 text-sm border border-white/20 backdrop-blur-sm appearance-none cursor-pointer focus:outline-none focus:border-transport-light/60 focus:ring-2 focus:ring-transport-light/20 transition-all"
+            >
+              <option v-for="lang in languages" :key="lang.code" :value="lang.code" class="text-gray-900">
+                {{ lang.flag }} {{ lang.label }}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
