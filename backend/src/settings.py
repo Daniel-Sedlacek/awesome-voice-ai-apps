@@ -1,4 +1,10 @@
 from msgspec_ext import BaseSettings, SettingsConfigDict
+from enum import StrEnum
+
+
+class STTProvider(StrEnum):
+    AZURE = "azure"
+    DEEPGRAM = "deepgram"
 
 
 class Settings(BaseSettings):
@@ -19,7 +25,7 @@ class Settings(BaseSettings):
     AZURE_OPENAI_API_VERSION: str = "2024-12-01-preview"
 
     # Azure Translator (transport only)
-    AZURE_TRANSLATOR_KEY: str = ""
+    AZURE_TRANSLATOR_KEY: str
     AZURE_TRANSLATOR_REGION: str = "westeurope"
 
     # Database (mcdonalds only)
@@ -32,8 +38,8 @@ class Settings(BaseSettings):
     # Reranker model (mcdonalds only)
     RERANKER_MODEL_NAME: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
-    # STT provider
-    STT_PROVIDER: str = "azure"  # "azure" or "deepgram"
+    # STT provider (enum)
+    STT_PROVIDER: STTProvider = STTProvider.AZURE
     DEEPGRAM_API_KEY: str = ""
 
 
