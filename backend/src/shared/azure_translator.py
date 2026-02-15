@@ -8,8 +8,10 @@ import requests as http_requests
 
 from src.settings import get_settings
 from src.shared.azure_stt import AzureServiceError
+from src.settings import get_settings
 
-TRANSLATOR_ENDPOINT = "https://api.cognitive.microsofttranslator.com"
+
+settings = get_settings()
 
 
 def translate_text(text: str, source_lang: str, target_lang: str) -> str:
@@ -38,7 +40,7 @@ def translate_text(text: str, source_lang: str, target_lang: str) -> str:
         return text
 
     try:
-        url = f"{TRANSLATOR_ENDPOINT}/translate"
+        url = f"{settings.TRANSLATOR_ENDPOINT}/translate"
         params = {
             "api-version": "3.0",
             "from": source_lang,
