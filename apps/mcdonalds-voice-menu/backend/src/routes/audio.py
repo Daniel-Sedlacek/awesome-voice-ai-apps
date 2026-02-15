@@ -1,4 +1,3 @@
-import base64
 import time
 
 from litestar import Controller, post
@@ -7,14 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_db_session
 from src.schemas import (
-    AudioRequest,
     AudioResponse,
     BasketActionRequest,
     BasketActionResponse,
     menu_item_to_response,
 )
 from src.session import UserSession, get_or_create_session
-from src.services.stt import transcribe_audio
 from src.services.azure_openai import parse_intent
 from src.services.embeddings import create_query_embedding
 from src.services.retrieval import (
@@ -25,7 +22,9 @@ from src.services.retrieval import (
     get_item_names_by_ids,
 )
 from src.services.reranker import rerank_items
+from src.settings import get_settings
 
+settings = get_settings()
 
 class PipelineTimer:
     """Collects step durations and prints a one-line summary."""
@@ -44,7 +43,7 @@ class PipelineTimer:
         total = time.perf_counter() - self._start
         parts = " | ".join(f"{name}: {dur * 1000:.0f}ms" for name, dur in self._steps)
         print(f"\n{'=' * 60}")
-        print(f"  Pipeline Timing")
+        print(f"  Pipeline Timing: {settings.STT_PROVIDER} as a STT provider")
         print(f"  {parts}")
         print(f"  Total: {total * 1000:.0f}ms")
         print(f"{'=' * 60}\n")
@@ -220,22 +219,6 @@ async def run_pipeline(
 class AudioController(Controller):
     path = "/api"
     dependencies = {"db": Provide(get_db_session)}
-
-    @post("/process-audio")
-    async def process_audio(
-        self,
-        data: AudioRequest,
-        db: AsyncSession,
-    ) -> AudioResponse:
-        timer = PipelineTimer()
-        session = get_or_create_session(data.session_id)
-        session.language = data.language
-
-        audio_bytes = base64.b64decode(data.audio_base64)
-        transcript = await transcribe_audio(audio_bytes, session.language)
-        timer.mark("STT")
-
-        return await run_pipeline(session, transcript, db, timer)
 
     @post("/basket/add")
     async def add_to_basket(

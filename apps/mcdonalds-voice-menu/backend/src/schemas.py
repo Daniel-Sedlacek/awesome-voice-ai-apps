@@ -3,13 +3,6 @@ from msgspec import Struct
 from src.models import MenuItem
 
 
-class AudioRequest(Struct):
-    """Request body for the audio processing endpoint."""
-    audio_base64: str
-    session_id: str | None = None
-    language: str = "en-US"
-
-
 class MenuItemResponse(Struct):
     """Serializable menu item for the audio endpoint response (excluding embedding)."""
     id: int

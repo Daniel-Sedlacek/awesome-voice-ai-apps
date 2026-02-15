@@ -16,48 +16,6 @@ _LOCALE_TO_LANG = {
 }
 
 
-async def transcribe_audio(
-    audio_data: bytes,
-    language: str = "en-US",
-    on_interim: Callable[[str], None] | None = None,
-) -> str:
-    """Transcribe audio using Deepgram's live streaming API."""
-    settings = get_settings()
-    client = AsyncDeepgramClient(api_key=settings.DEEPGRAM_API_KEY)
-    lang_code = _LOCALE_TO_LANG.get(language, language)
-    phrases = get_menu_phrases(language)
-    keyterms = [f"{p}:2" for p in phrases]
-
-    final_parts: list[str] = []
-
-    async with client.listen.v1.connect(
-        model="nova-3",
-        language=lang_code,
-        smart_format="true",
-        interim_results="true" if on_interim else "false",
-        utterance_end_ms="1000",
-        keyterm=keyterms,
-    ) as connection:
-
-        def on_message(result):
-            if getattr(result, "type", None) != "Results":
-                return
-            transcript = result.channel.alternatives[0].transcript
-            if not transcript:
-                return
-            if result.is_final:
-                final_parts.append(transcript)
-            elif on_interim:
-                on_interim(transcript)
-
-        connection.on(EventType.MESSAGE, on_message)
-        await connection.send_media(audio_data)
-        await connection.send_control(ListenV1ControlMessage(type="Finalize"))
-        await connection.start_listening()
-
-    return " ".join(final_parts).strip()
-
-
 class DeepgramStreamingSession(StreamingSTTSession):
     """Streaming STT using Deepgram's async WebSocket API.
 
