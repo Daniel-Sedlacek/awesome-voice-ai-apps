@@ -64,7 +64,7 @@ npm install
 npm run dev
 ```
 
-For more details on local setup (database, migrations, environment variables), see the [CLAUDE.md](./CLAUDE.md) file or the individual app READMEs in `backend/src/apps/`.
+For more details on local setup (database, migrations, environment variables), see the individual app READMEs in `backend/src/apps/`.
 
 ## Contributing
 
