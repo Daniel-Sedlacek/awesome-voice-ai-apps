@@ -1,7 +1,0 @@
-@import "tailwindcss";
-
-/* Custom theme colors using CSS variables (Tailwind v4 approach) */
-@theme {
-    --color-mcdonalds-red: #DA291C;
-    --color-mcdonalds-yellow: #FFC72C;
-}

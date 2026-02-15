@@ -17,7 +17,7 @@ def _load_menu_phrases() -> dict[str, list[str]]:
     """Load menu item names per language from menu_items.json (cached)."""
     if _menu_phrases:
         return _menu_phrases
-    menu_path = Path(__file__).resolve().parents[3] / "data" / "menu_items.json"
+    menu_path = Path(__file__).resolve().parents[4] / "data" / "menu_items.json"
     items = json.loads(menu_path.read_text(encoding="utf-8"))
     for locale, field in _LOCALE_TO_NAME_FIELD.items():
         _menu_phrases[locale] = list({item[field] for item in items})
