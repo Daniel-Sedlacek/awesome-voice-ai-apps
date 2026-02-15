@@ -3,7 +3,9 @@ Azure Speech-to-Text service wrappers.
 Provides one-shot and continuous recognition.
 """
 
+import io
 import time
+import wave
 
 import azure.cognitiveservices.speech as speechsdk
 
@@ -46,6 +48,10 @@ def transcribe_audio(audio_data: bytes, locale: str = "en-US") -> str:
         recognizer = speechsdk.SpeechRecognizer(
             speech_config=speech_config, audio_config=audio_config
         )
+
+        if audio_data[:4] == b'RIFF':
+            with wave.open(io.BytesIO(audio_data), 'rb') as wav_file:
+                audio_data = wav_file.readframes(wav_file.getnframes())
 
         audio_stream.write(audio_data)
         audio_stream.close()
@@ -120,6 +126,10 @@ def transcribe_audio_continuous(audio_data: bytes, locale: str = "en-US") -> str
         recognizer.session_stopped.connect(stopped_cb)
 
         recognizer.start_continuous_recognition()
+
+        if audio_data[:4] == b'RIFF':
+            with wave.open(io.BytesIO(audio_data), 'rb') as wav_file:
+                audio_data = wav_file.readframes(wav_file.getnframes())
 
         audio_stream.write(audio_data)
         audio_stream.close()
