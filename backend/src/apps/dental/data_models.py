@@ -1,24 +1,26 @@
 """
-Pydantic models for periodontal examination data.
+Msgspec models for periodontal examination data.
 Uses FDI/ISO tooth numbering system (11-48).
 """
 
-from typing import Optional
-from pydantic import BaseModel, Field
+from typing import Annotated
+
+import msgspec
+from msgspec import Meta, Struct
 
 
-class SiteMeasurement(BaseModel):
+class SiteMeasurement(Struct):
     """Measurements for a single site on a tooth."""
-    pd: Optional[int] = Field(None, ge=1, le=12, description="Probing depth in mm")
-    cal: Optional[int] = Field(None, ge=0, le=15, description="Clinical attachment level in mm")
-    recession: Optional[int] = Field(None, ge=0, le=10, description="Gingival recession in mm")
-    bop: Optional[bool] = Field(None, description="Bleeding on probing")
+    pd: Annotated[int, Meta(ge=1, le=12, description="Probing depth in mm")] | None = None
+    cal: Annotated[int, Meta(ge=0, le=15, description="Clinical attachment level in mm")] | None = None
+    recession: Annotated[int, Meta(ge=0, le=10, description="Gingival recession in mm")] | None = None
+    bop: Annotated[bool, Meta(description="Bleeding on probing")] | None = None
 
 
-class ToothData(BaseModel):
+class ToothData(Struct):
     """Data for a single tooth with 6 measurement sites."""
-    tooth_number: int = Field(..., ge=11, le=48, description="FDI tooth number")
-    sites: dict[str, SiteMeasurement] = Field(
+    tooth_number: Annotated[int, Meta(ge=11, le=48, description="FDI tooth number")]
+    sites: Annotated[dict[str, SiteMeasurement], Meta(description="Measurements for 6 sites")] = msgspec.field(
         default_factory=lambda: {
             "mesio_buccal": SiteMeasurement(),
             "mid_buccal": SiteMeasurement(),
@@ -26,20 +28,19 @@ class ToothData(BaseModel):
             "mesio_lingual": SiteMeasurement(),
             "mid_lingual": SiteMeasurement(),
             "disto_lingual": SiteMeasurement(),
-        },
-        description="Measurements for 6 sites"
+        }
     )
-    mobility: Optional[int] = Field(None, ge=0, le=3, description="Tooth mobility grade")
-    furcation: Optional[int] = Field(None, ge=0, le=3, description="Furcation involvement grade")
-    plaque: Optional[bool] = Field(None, description="Plaque present")
-    calculus: Optional[bool] = Field(None, description="Calculus present")
+    mobility: Annotated[int, Meta(ge=0, le=3, description="Tooth mobility grade")] | None = None
+    furcation: Annotated[int, Meta(ge=0, le=3, description="Furcation involvement grade")] | None = None
+    plaque: Annotated[bool, Meta(description="Plaque present")] | None = None
+    calculus: Annotated[bool, Meta(description="Calculus present")] | None = None
 
 
-class PeriodontalExam(BaseModel):
+class PeriodontalExam(Struct):
     """Complete periodontal examination data."""
-    teeth: dict[str, ToothData] = Field(default_factory=dict, description="Teeth data keyed by tooth number")
-    raw_transcription: str = Field(..., description="Original transcribed text")
-    extraction_notes: Optional[str] = Field(None, description="Notes about extraction ambiguities")
+    raw_transcription: Annotated[str, Meta(description="Original transcribed text")]
+    teeth: Annotated[dict[str, ToothData], Meta(description="Teeth data keyed by tooth number")] = msgspec.field(default_factory=dict)
+    extraction_notes: Annotated[str, Meta(description="Notes about extraction ambiguities")] | None = None
 
 
 VALID_TOOTH_NUMBERS = [
@@ -64,7 +65,7 @@ BUCCAL_SITES = ["mesio_buccal", "mid_buccal", "disto_buccal"]
 LINGUAL_SITES = ["mesio_lingual", "mid_lingual", "disto_lingual"]
 
 
-def get_max_pd(tooth: ToothData) -> Optional[int]:
+def get_max_pd(tooth: ToothData) -> int | None:
     """Get the maximum probing depth for a tooth."""
     max_pd = None
     for site in tooth.sites.values():
@@ -74,7 +75,7 @@ def get_max_pd(tooth: ToothData) -> Optional[int]:
     return max_pd
 
 
-def get_severity_color(pd: Optional[int]) -> str:
+def get_severity_color(pd: int | None) -> str:
     """Get color code based on probing depth severity."""
     if pd is None:
         return "#e0e0e0"

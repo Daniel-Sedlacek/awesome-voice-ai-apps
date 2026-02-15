@@ -1,47 +1,39 @@
 """
-Pydantic models for psychotherapy tracking data.
+Msgspec models for psychotherapy tracking data.
 """
 
 from datetime import datetime
-from pydantic import BaseModel, Field
+from typing import Annotated
+
+import msgspec
+from msgspec import Meta, Struct
 
 
-class PsychMetrics(BaseModel):
+class PsychMetrics(Struct):
     """Six psychological metrics rated 1-10."""
-
-    anxiety: int = Field(..., ge=1, le=10, description="Anxiety level (1=low, 10=high)")
-    depression: int = Field(
-        ..., ge=1, le=10, description="Depression indicators (1=low, 10=high)"
-    )
-    stress: int = Field(..., ge=1, le=10, description="Stress level (1=low, 10=high)")
-    emotional_stability: int = Field(
-        ..., ge=1, le=10, description="Emotional stability (1=low, 10=high)"
-    )
-    positive_affect: int = Field(
-        ..., ge=1, le=10, description="Positive emotions (1=low, 10=high)"
-    )
-    energy_level: int = Field(
-        ..., ge=1, le=10, description="Energy/vitality (1=low, 10=high)"
-    )
+    anxiety: Annotated[int, Meta(ge=1, le=10, description="Anxiety level (1=low, 10=high)")]
+    depression: Annotated[int, Meta(ge=1, le=10, description="Depression indicators (1=low, 10=high)")]
+    stress: Annotated[int, Meta(ge=1, le=10, description="Stress level (1=low, 10=high)")]
+    emotional_stability: Annotated[int, Meta(ge=1, le=10, description="Emotional stability (1=low, 10=high)")]
+    positive_affect: Annotated[int, Meta(ge=1, le=10, description="Positive emotions (1=low, 10=high)")]
+    energy_level: Annotated[int, Meta(ge=1, le=10, description="Energy/vitality (1=low, 10=high)")]
 
 
-class AnalysisReport(BaseModel):
+class AnalysisReport(Struct):
     """Structured psychological analysis report."""
+    summary: Annotated[str, Meta(description="Brief overall summary")]
+    key_emotions: Annotated[str, Meta(description="Main emotions identified")]
+    concerns_themes: Annotated[str, Meta(description="Recurring concerns or themes")]
+    insights: Annotated[str, Meta(description="Psychological insights and observations")]
 
-    summary: str = Field(..., description="Brief overall summary")
-    key_emotions: str = Field(..., description="Main emotions identified")
-    concerns_themes: str = Field(..., description="Recurring concerns or themes")
-    insights: str = Field(..., description="Psychological insights and observations")
 
-
-class SessionResult(BaseModel):
+class SessionResult(Struct):
     """Complete session result with metrics, report, and metadata."""
-
     metrics: PsychMetrics
     report: AnalysisReport
-    transcription: str = Field(..., description="Original transcribed text")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    session_number: int = Field(..., description="Session number for today")
+    transcription: Annotated[str, Meta(description="Original transcribed text")]
+    session_number: Annotated[int, Meta(description="Session number for today")]
+    timestamp: datetime = msgspec.field(default_factory=datetime.utcnow)
 
 
 METRIC_NAMES = {

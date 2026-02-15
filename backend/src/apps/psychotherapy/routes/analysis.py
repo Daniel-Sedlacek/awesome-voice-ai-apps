@@ -4,6 +4,7 @@ Psychotherapy tracker API routes.
 
 import base64
 
+import msgspec
 from litestar import Controller, get, post
 
 from src.shared.azure_stt import transcribe_audio_continuous
@@ -66,8 +67,8 @@ class AnalysisController(Controller):
 
         # Store the session
         session_data = {
-            "metrics": result.metrics.model_dump(),
-            "report": result.report.model_dump(),
+            "metrics": msgspec.to_builtins(result.metrics),
+            "report": msgspec.to_builtins(result.report),
             "transcription": result.transcription,
             "timestamp": result.timestamp.isoformat(),
             "session_number": result.session_number,
