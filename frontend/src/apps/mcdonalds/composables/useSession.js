@@ -10,6 +10,7 @@ export function useSession() {
   const isProcessing = ref(false)
   const interimTranscript = ref('')
   const isOrdering = ref(false)
+  const orderConfirmed = ref(false)
 
   const supportedLanguages = [
     { code: 'en-US', label: 'English', flag: '\u{1f1ec}\u{1f1e7}' },
@@ -35,6 +36,7 @@ export function useSession() {
     if (response.basket_items !== undefined) {
       basketItems.value = response.basket_items
     }
+    orderConfirmed.value = !!response.confirmed
   }
 
   function updateBasketFromResponse(response) {
@@ -53,6 +55,7 @@ export function useSession() {
     message.value = ''
     menuItems.value = []
     basketItems.value = []
+    orderConfirmed.value = false
   }
 
   return {
@@ -66,6 +69,7 @@ export function useSession() {
     isProcessing,
     interimTranscript,
     isOrdering,
+    orderConfirmed,
     supportedLanguages,
     updateFromResponse,
     updateBasketFromResponse,

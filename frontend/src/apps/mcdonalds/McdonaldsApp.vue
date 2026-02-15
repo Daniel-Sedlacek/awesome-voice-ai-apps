@@ -21,6 +21,7 @@ const {
   isProcessing,
   interimTranscript,
   isOrdering,
+  orderConfirmed,
   supportedLanguages,
   updateFromResponse,
   updateBasketFromResponse,
@@ -118,7 +119,7 @@ async function handleRemoveFromBasket(itemId) {
       <p v-if="transcript && !isProcessing" class="text-white/90 text-center max-w-md">
         "{{ transcript }}"
       </p>
-      <p v-if="message" class="text-mcdonalds-yellow text-center">{{ message }}</p>
+      <p v-if="message && !orderConfirmed" class="text-mcdonalds-yellow text-center">{{ message }}</p>
       <p v-if="audioError" class="text-sm text-red-400">{{ audioError }}</p>
 
       <!-- Voice Command Hints -->
@@ -192,6 +193,7 @@ async function handleRemoveFromBasket(itemId) {
               :items="basketItems"
               :language="language"
               :total="basketTotal"
+              :confirmed="orderConfirmed"
               @remove="handleRemoveFromBasket"
             />
           </div>

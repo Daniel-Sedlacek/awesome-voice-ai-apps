@@ -26,6 +26,7 @@ class AudioResponse(Struct):
     transcript: str = ""
     session_id: str = ""
     message: str = ""
+    confirmed: bool = False
 
 
 class BasketActionRequest(Struct):

@@ -107,6 +107,7 @@ async def run_pipeline(
     intent = intent_result.get("intent")
     timer.mark("LLM")
     msg = ""
+    confirmed = False
 
     if intent == "CLEAR":
         session.clear()
@@ -192,6 +193,7 @@ async def run_pipeline(
 
     elif intent == "CONFIRM":
         msg = "Order confirmed! Thank you!"
+        confirmed = True
 
     items = await get_items_by_ids(db, session.displayed_item_ids)
     basket_items_db = await get_items_by_ids(db, session.basket_item_ids)
@@ -205,6 +207,7 @@ async def run_pipeline(
         transcript=transcript,
         session_id=session.session_id,
         message=msg,
+        confirmed=confirmed,
     )
 
 
