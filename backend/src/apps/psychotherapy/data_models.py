@@ -29,8 +29,8 @@ class AnalysisReport(Struct):
 
 class SessionResult(Struct):
     """Complete session result with metrics, report, and metadata."""
-    metrics: PsychMetrics
-    report: AnalysisReport
+    metrics: Annotated[PsychMetrics, Meta(description="Psychological metrics for the session")]
+    report: Annotated[AnalysisReport, Meta(description="Structured analysis report")]
     transcription: Annotated[str, Meta(description="Original transcribed text")]
     session_number: Annotated[int, Meta(description="Session number for today")]
     timestamp: datetime = msgspec.field(default_factory=datetime.utcnow)
