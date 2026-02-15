@@ -14,33 +14,36 @@ class Settings(BaseSettings):
         env_file=".env",
     )
 
-    # Azure Speech (all apps use STT)
+    # Azure Speech
     AZURE_SPEECH_KEY: str
     AZURE_SPEECH_REGION: str = "westeurope"
 
-    # Azure OpenAI (mcdonalds, dental, psychotherapy)
+    # Azure OpenAI
     AZURE_OPENAI_ENDPOINT: str
     AZURE_OPENAI_KEY: str
     AZURE_OPENAI_DEPLOYMENT: str = "gpt-4.1-mini"
     AZURE_OPENAI_API_VERSION: str = "2024-12-01-preview"
 
-    # Azure Translator (transport only)
+    # Azure Translator
+    TRANSLATOR_ENDPOINT: str = "https://api.cognitive.microsofttranslator.com"
     AZURE_TRANSLATOR_KEY: str
-    AZURE_TRANSLATOR_REGION: str = "westeurope"
+    AZURE_TRANSLATOR_REGION: str = "global"
 
-    # Database (mcdonalds only)
+    # Database
     DATABASE_URL: str = "postgresql+asyncpg://mcdonalds:mcdonalds@localhost:5432/mcdonalds_menu"
 
-    # Embedding model (mcdonalds only)
+    # Embedding model
     EMBEDDING_MODEL_NAME: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     EMBEDDING_DIMENSION: int = 384
 
-    # Reranker model (mcdonalds only)
+    # Reranker model
     RERANKER_MODEL_NAME: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
-    # STT provider (enum)
+    # STT provider
     STT_PROVIDER: STTProvider = STTProvider.AZURE
-    DEEPGRAM_API_KEY: str = ""
+    
+    # Deepgram
+    DEEPGRAM_API_KEY: str
 
 
 def get_settings() -> Settings:
