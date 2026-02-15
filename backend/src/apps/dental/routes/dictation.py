@@ -4,9 +4,11 @@ Dental dictation API routes.
 
 import base64
 
+import msgspec
 from litestar import Controller, get, post
 
 from src.shared.azure_stt import transcribe_audio_continuous
+from src.apps.dental.phrase_hints import get_dental_phrases
 from src.apps.dental.schemas import (
     DictationRequest,
     DictationResponse,
@@ -26,14 +28,15 @@ class DictationController(Controller):
         audio_data = base64.b64decode(data.audio_base64)
 
         # Continuous recognition for longer dictations
-        transcription = transcribe_audio_continuous(audio_data, data.locale)
+        phrases = get_dental_phrases(data.locale)
+        transcription = transcribe_audio_continuous(audio_data, data.locale, phrase_hints=phrases)
 
         # Extract structured periodontal data
         exam = extract_periodontal_data(transcription)
 
         return DictationResponse(
             transcription=transcription,
-            exam_data=exam.model_dump(),
+            exam_data=msgspec.to_builtins(exam),
             extraction_notes=exam.extraction_notes,
         )
 
