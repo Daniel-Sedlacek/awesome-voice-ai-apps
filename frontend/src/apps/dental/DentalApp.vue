@@ -1,7 +1,8 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useAudioRecording } from '@/shared/composables/useAudioRecording'
 import { useDictation } from './composables/useDictation'
+import { dental } from '@/api/client'
 import LanguageSelector from '@/shared/components/LanguageSelector.vue'
 import AudioRecorder from '@/shared/components/AudioRecorder.vue'
 import DentalChart from './components/DentalChart.vue'
@@ -14,6 +15,22 @@ const languages = [
 ]
 
 const locale = ref('en-US')
+const exampleDictations = ref({})
+
+const currentExample = computed(() => exampleDictations.value[locale.value] || '')
+
+onMounted(async () => {
+  try {
+    const data = await dental.getLanguages()
+    const map = {}
+    for (const lang of data.languages) {
+      map[lang.locale] = lang.example_dictation
+    }
+    exampleDictations.value = map
+  } catch {
+    // Non-critical — example dictations simply won't show
+  }
+})
 
 const { isRecording, audioBlob, error: recError, startRecording, stopRecording } = useAudioRecording()
 const { isProcessing, error: apiError, transcription, examData, extractionNotes, processAudio } = useDictation()
@@ -44,6 +61,42 @@ watch(audioBlob, async (blob) => {
           :languages="languages"
           active-class="bg-dental-light text-dental-teal shadow-md scale-105"
         />
+      </div>
+
+      <!-- Example dictation & measurement reference -->
+      <div class="space-y-4">
+        <!-- Example dictation -->
+        <div v-if="currentExample" class="bg-white/10 rounded-xl p-4 text-center">
+          <p class="text-dental-light/70 text-xs font-semibold uppercase tracking-wide mb-2">Example dictation</p>
+          <p class="text-white/80 text-sm italic">{{ currentExample }}</p>
+        </div>
+
+        <!-- Recordable measurements -->
+        <div class="bg-white/10 rounded-xl p-4">
+          <p class="text-dental-light/70 text-xs font-semibold uppercase tracking-wide mb-3">Recordable measurements</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <!-- Per-site measurements -->
+            <div>
+              <p class="text-dental-light font-semibold text-xs mb-1">Per site (MB, B, DB, ML, L, DL)</p>
+              <ul class="text-white/70 text-xs space-y-0.5">
+                <li>Pocket Depth (PD) — 1–12 mm</li>
+                <li>Clinical Attachment Level (CAL) — 0–15 mm</li>
+                <li>Recession — 0–10 mm</li>
+                <li>Bleeding on Probing (BOP) — yes / no</li>
+              </ul>
+            </div>
+            <!-- Per-tooth measurements -->
+            <div>
+              <p class="text-dental-light font-semibold text-xs mb-1">Per tooth</p>
+              <ul class="text-white/70 text-xs space-y-0.5">
+                <li>Mobility — grade 0–3</li>
+                <li>Furcation — grade 0–3</li>
+                <li>Plaque — yes / no</li>
+                <li>Calculus — yes / no</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Recorder -->
