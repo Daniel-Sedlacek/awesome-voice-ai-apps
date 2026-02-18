@@ -56,7 +56,7 @@ You can also run the backend and frontend locally without Docker:
 # Backend
 cd backend
 uv sync
-uv run litestar run --reload --host 0.0.0.0 --port 8000
+uv run uvicorn src.app:app --reload --host 127.0.0.1 --port 8000
 
 # Frontend (in a separate terminal)
 cd frontend
