@@ -1,4 +1,5 @@
 import logging
+import asyncio
 
 from huggingface_hub import try_to_load_from_cache
 from litestar import Litestar
@@ -25,22 +26,24 @@ def _is_model_cached(repo_id: str) -> bool:
 
 
 async def preload_models() -> None:
-    """Download embedding and reranker models at startup if not already cached."""
-    settings = get_settings()
+      """Download embedding and reranker models at startup if not already cached."""
+      
+      settings = get_settings()
+      loop = asyncio.get_running_loop()
 
-    if _is_model_cached(settings.EMBEDDING_MODEL_NAME):
-        logger.info("Embedding model already cached, skipping download.")
-    else:
-        logger.info("Downloading embedding model...")
-        get_embedding_model()
-        logger.info("Embedding model downloaded.")
+      if _is_model_cached(settings.EMBEDDING_MODEL_NAME):
+          logger.info("Embedding model already cached, skipping download.")
+      else:
+          logger.info("Downloading embedding model...")
+          await loop.run_in_executor(None, get_embedding_model)
+          logger.info("Embedding model downloaded.")
 
-    if _is_model_cached(settings.RERANKER_MODEL_NAME):
-        logger.info("Reranker model already cached, skipping download.")
-    else:
-        logger.info("Downloading reranker model...")
-        get_reranker_model()
-        logger.info("Reranker model downloaded.")
+      if _is_model_cached(settings.RERANKER_MODEL_NAME):
+          logger.info("Reranker model already cached, skipping download.")
+      else:
+          logger.info("Downloading reranker model...")
+          await loop.run_in_executor(None, get_reranker_model)
+          logger.info("Reranker model downloaded.")
 
 
 # CORS configuration for frontend
